@@ -439,14 +439,14 @@
 
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeSettings()">閉じる</button>
-                <button class="btn-save" onclick="saveSettings()">設定を適用</button>
+                <button class="btn-save" onclick="saveSettings()">設定を適用（全員に反映）</button>
             </div>
         </div>
     </div>
 
     <script>
         /**
-         * System Configuration Management (Local Storage)
+         * System Configuration Management (Server Fetch & Auto Save)
          */
         const DEFAULT_CONFIG = {
             gridSize: '240px', showTitle: true, clockFormat: '24h',
@@ -454,7 +454,8 @@
             cardGap: '20px', openInNewTab: true, enableAnimations: true
         };
 
-        let appConfig = { ...DEFAULT_CONFIG, ...(JSON.parse(localStorage.getItem('appConfig_v2')) || {}) };
+        // 初期状態はデフォルト値。後でサーバーから上書きする
+        let appConfig = { ...DEFAULT_CONFIG };
 
         /**
          * Game Data Management (Server Fetch & Auto Save)
@@ -472,7 +473,7 @@
 
         let dragStartIndex = null;
 
-        // サーバーに現在の games 配列を保存する (PHP連携)
+        // サーバーにゲーム配列を保存する
         async function saveGamesToServer() {
             try {
                 const response = await fetch('./save_games.php', {
@@ -490,9 +491,38 @@
             }
         }
 
+        // サーバーにシステム設定を保存する
+        async function saveConfigToServer() {
+            try {
+                const response = await fetch('./save_config.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(appConfig)
+                });
+                if (!response.ok) {
+                    console.error('設定の保存に失敗しました');
+                }
+            } catch (error) {
+                console.error('通信エラー:', error);
+            }
+        }
+
         async function init() {
-            applyConfig();
+            // サーバーからシステム設定(UI)を読み込む
+            try {
+                const confResponse = await fetch('./config.json?t=' + new Date().getTime());
+                if (confResponse.ok) {
+                    const serverConfig = await confResponse.json();
+                    // デフォルト設定とサーバー設定を結合
+                    appConfig = { ...DEFAULT_CONFIG, ...serverConfig };
+                }
+            } catch (error) {
+                console.error('設定の読み込みエラー:', error);
+            }
             
+            applyConfig(); // UI設定を画面に反映
+            
+            // サーバーからゲームデータを読み込む
             try {
                 const response = await fetch('./games.json?t=' + new Date().getTime());
                 if (response.ok) {
@@ -635,7 +665,7 @@
             const item = games.splice(dragStartIndex, 1)[0];
             games.splice(dropIndex, 0, item);
             renderGames();
-            saveGamesToServer(); // ★自動保存
+            saveGamesToServer();
         }
 
         function handleDragEnd() {
@@ -684,7 +714,7 @@
             }
             renderGames();
             closeGameModal();
-            saveGamesToServer(); // ★自動保存
+            saveGamesToServer();
         }
 
         function deleteGame(id) {
@@ -693,7 +723,7 @@
                 games = games.filter(g => g.id !== id);
                 renderGames();
                 closeGameModal();
-                saveGamesToServer(); // ★自動保存
+                saveGamesToServer();
             }
         }
 
@@ -724,8 +754,12 @@
                 openInNewTab: document.getElementById('setting-new-tab').checked,
                 enableAnimations: document.getElementById('setting-animations').checked
             };
-            localStorage.setItem('appConfig_v2', JSON.stringify(appConfig));
-            applyConfig(); closeSettings();
+            
+            // サーバーへ設定を保存する
+            saveConfigToServer();
+            
+            applyConfig(); 
+            closeSettings();
         }
 
         function exportData() {
@@ -748,7 +782,7 @@
                         if (confirm("既存のゲーム一覧データはすべて上書きされ、サーバーに保存されます。続行しますか？")) {
                             games = importedData;
                             renderGames();
-                            saveGamesToServer(); // ★自動保存
+                            saveGamesToServer();
                             closeSettings();
                             alert("データのインポートが完了しました。全員に反映されます。");
                         }
@@ -767,7 +801,7 @@
             if (confirm("【警告】すべてのゲーム一覧データが削除され、サーバーからも消去されます。この操作は取り消せません。\n本当に初期化しますか？")) {
                 games = [];
                 renderGames();
-                saveGamesToServer(); // ★自動保存
+                saveGamesToServer();
                 closeSettings();
             }
         }
