@@ -427,7 +427,7 @@
             </label>
 
             <h3>データ管理</h3>
-            <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">設定データのエクスポート・インポートを行います。</p>
+            <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">設定とゲームデータのエクスポート・インポートを行います。</p>
             <div class="settings-btn-group">
                 <button class="btn-outline" onclick="exportData()">↓ エクスポート</button>
                 <button class="btn-outline" onclick="document.getElementById('import-file').click()">↑ インポート</button>
@@ -755,21 +755,27 @@
                 enableAnimations: document.getElementById('setting-animations').checked
             };
             
-            // サーバーへ設定を保存する
             saveConfigToServer();
-            
             applyConfig(); 
             closeSettings();
         }
 
+        // ★変更箇所：ゲームデータと設定データの両方を含めてエクスポート
         function exportData() {
-            if (games.length === 0) { alert("エクスポート対象のデータが存在しません。"); return; }
+            const exportObject = {
+                games: games,
+                config: appConfig
+            };
+            
             const a = document.createElement("a");
-            a.href = URL.createObjectURL(new Blob([JSON.stringify(games, null, 2)], { type: "application/json" }));
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(exportObject, null, 2)], { type: "application/json" }));
             a.download = `launcher_backup_${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            document.body.appendChild(a); 
+            a.click(); 
+            document.body.removeChild(a);
         }
 
+        // ★変更箇所：新旧のフォーマット両方に対応してインポート
         function importData(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -778,19 +784,37 @@
             reader.onload = function(e) {
                 try {
                     const importedData = JSON.parse(e.target.result);
-                    if (Array.isArray(importedData)) {
-                        if (confirm("既存のゲーム一覧データはすべて上書きされ、サーバーに保存されます。続行しますか？")) {
+                    
+                    if (confirm("既存のデータとシステム設定はすべて上書きされ、サーバーに保存されます。続行しますか？")) {
+                        
+                        // パターン1: 過去のバックアップ（ゲームの配列のみ）
+                        if (Array.isArray(importedData)) {
                             games = importedData;
                             renderGames();
                             saveGamesToServer();
-                            closeSettings();
-                            alert("データのインポートが完了しました。全員に反映されます。");
+                        } 
+                        // パターン2: 新しいバックアップ（ゲームと設定の両方を含むオブジェクト）
+                        else if (importedData !== null && typeof importedData === 'object') {
+                            if (importedData.games && Array.isArray(importedData.games)) {
+                                games = importedData.games;
+                                renderGames();
+                                saveGamesToServer();
+                            }
+                            if (importedData.config && typeof importedData.config === 'object') {
+                                appConfig = { ...DEFAULT_CONFIG, ...importedData.config };
+                                applyConfig();
+                                saveConfigToServer();
+                            }
+                        } else {
+                            throw new Error("Invalid format");
                         }
-                    } else {
-                        throw new Error("Invalid format");
+                        
+                        closeSettings();
+                        alert("データのインポートが完了しました。全員に反映されます。");
                     }
                 } catch (error) {
-                    alert("ファイルのパースに失敗しました。正しいJSONファイルを指定してください。");
+                    alert("ファイルの読み込みに失敗しました。正しいJSONファイルを指定してください。");
+                    console.error(error);
                 }
                 event.target.value = '';
             };
