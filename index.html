@@ -9,17 +9,15 @@
          * Global Variables & Theming
          * ---------------------------------------- */
         :root {
-            /* Theme Defaults (Overridden by JS Config) */
             --bg-color: #2b2b2b;
             --text-color: #ffffff;
             --focus-color: #00e6e6;
             --focus-color-rgb: 0, 230, 230;
-            --card-bg: rgba(58, 58, 58, 0.85); /* Slightly transparent for custom backgrounds */
+            --card-bg: rgba(58, 58, 58, 0.85);
             --modal-bg: rgba(0, 0, 0, 0.8);
             --modal-content-bg: #444;
             --header-footer-height: 80px;
             
-            /* Dynamic Layout Variables */
             --grid-min-width: 240px;
             --grid-gap: 20px;
             --card-radius: 4px;
@@ -68,7 +66,6 @@
             text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
         }
 
-        /* Search Component */
         .search-container {
             display: flex;
             align-items: center;
@@ -101,28 +98,12 @@
             width: 200px;
         }
 
-        .search-container input::placeholder {
-            color: #aaa;
-        }
-
-        .header-info-text {
-            font-size: 14px;
-            color: #ddd;
-        }
-
-        /* Settings Icon */
-        .settings-btn {
-            cursor: pointer;
-            font-size: 20px;
-            transition: color 0.2s, transform 0.2s;
-        }
-        .settings-btn:hover {
-            color: var(--focus-color);
-            transform: rotate(45deg);
-        }
+        .header-info-text { font-size: 14px; color: #ddd; }
+        .settings-btn { cursor: pointer; font-size: 20px; transition: color 0.2s, transform 0.2s; }
+        .settings-btn:hover { color: var(--focus-color); transform: rotate(45deg); }
 
         /* ----------------------------------------
-         * Main Content & Grid Layout
+         * Main Content & Grid
          * ---------------------------------------- */
         main {
             flex: 1;
@@ -131,9 +112,7 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-        main::-webkit-scrollbar {
-            display: none;
-        }
+        main::-webkit-scrollbar { display: none; }
 
         .grid-container {
             display: grid;
@@ -143,7 +122,7 @@
         }
 
         /* ----------------------------------------
-         * Game Card Components
+         * Cards
          * ---------------------------------------- */
         .game-card {
             position: relative;
@@ -157,7 +136,7 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            backdrop-filter: blur(5px); /* effect for custom background */
+            backdrop-filter: blur(5px);
         }
 
         .game-card:hover {
@@ -188,9 +167,7 @@
             border-top: 1px solid rgba(255,255,255,0.1);
         }
 
-        body.hide-titles .title-bar {
-            display: none;
-        }
+        body.hide-titles .title-bar { display: none; }
 
         .add-card {
             display: flex;
@@ -230,15 +207,8 @@
             z-index: 20;
         }
 
-        .game-card:hover .edit-btn {
-            opacity: 1;
-        }
-        
-        .edit-btn:hover {
-            background: var(--focus-color);
-            color: #000;
-            border-color: var(--focus-color);
-        }
+        .game-card:hover .edit-btn { opacity: 1; }
+        .edit-btn:hover { background: var(--focus-color); color: #000; border-color: var(--focus-color); }
 
         /* ----------------------------------------
          * Footer
@@ -253,21 +223,10 @@
             font-size: 14px;
             color: #ccc;
             background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
             backdrop-filter: blur(10px);
         }
-
-        .footer-left {
-            display: flex;
-            gap: 20px;
-        }
-
-        .footer-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
+        .footer-left { display: flex; gap: 20px; }
+        .footer-btn { display: flex; align-items: center; gap: 6px; }
         .key-icon {
             background-color: rgba(255,255,255,0.2);
             color: #fff;
@@ -275,12 +234,10 @@
             border-radius: 12px;
             font-weight: bold;
             font-size: 11px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.5);
-            text-shadow: none;
         }
 
         /* ----------------------------------------
-         * Modals (Forms & Settings)
+         * Modals
          * ---------------------------------------- */
         .modal {
             display: none;
@@ -294,11 +251,7 @@
             transition: opacity 0.3s;
             backdrop-filter: blur(3px);
         }
-
-        .modal.active {
-            display: flex;
-            opacity: 1;
-        }
+        .modal.active { display: flex; opacity: 1; }
 
         .modal-content {
             background-color: var(--modal-content-bg);
@@ -307,159 +260,52 @@
             width: 480px;
             box-shadow: 0 15px 50px rgba(0,0,0,0.8);
             transform: translateY(-20px);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.3s;
             max-height: 90vh;
             overflow-y: auto;
         }
-        
-        /* Custom scrollbar for modal */
-        .modal-content::-webkit-scrollbar {
-            width: 8px;
-        }
-        .modal-content::-webkit-scrollbar-thumb {
-            background-color: #666;
-            border-radius: 4px;
-        }
+        .modal-content::-webkit-scrollbar { width: 8px; }
+        .modal-content::-webkit-scrollbar-thumb { background-color: #666; border-radius: 4px; }
+        .modal.active .modal-content { transform: translateY(0); }
 
-        .modal.active .modal-content {
-            transform: translateY(0);
-        }
+        .modal-content h2 { margin-bottom: 25px; font-size: 22px; text-align: center; border-bottom: 1px solid #555; padding-bottom: 15px; }
+        .modal-content h3 { font-size: 15px; margin: 25px 0 15px 0; color: var(--focus-color); display: flex; align-items: center; gap: 8px; }
+        .modal-content h3::before { content: ""; display: block; width: 4px; height: 1em; background-color: var(--focus-color); border-radius: 2px; }
 
-        .modal-content h2 {
-            margin-bottom: 25px;
-            font-size: 22px;
-            text-align: center;
-            border-bottom: 1px solid #555;
-            padding-bottom: 15px;
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 13px; color: #ccc; }
+        .form-group input[type="text"], .form-group input[type="url"], .form-group select {
+            width: 100%; padding: 10px 12px; border: 1px solid #555; border-radius: 4px; background-color: #222; color: white; outline: none; font-size: 14px;
         }
+        .form-group input:focus, .form-group select:focus { border-color: var(--focus-color); }
+        .form-group input[type="color"] { width: 100%; height: 40px; padding: 2px; background-color: #222; border: 1px solid #555; border-radius: 4px; cursor: pointer; }
+        .form-group-checkbox { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; font-size: 14px; color: #eee; cursor: pointer; }
+        .form-group-checkbox input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--focus-color); }
 
-        .modal-content h3 {
-            font-size: 15px;
-            margin: 25px 0 15px 0;
-            color: var(--focus-color);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .modal-content h3::before {
-            content: "";
-            display: block;
-            width: 4px;
-            height: 1em;
-            background-color: var(--focus-color);
-            border-radius: 2px;
-        }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 35px; padding-top: 15px; border-top: 1px solid #555; }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 13px;
-            color: #ccc;
-        }
-
-        .form-group input[type="text"],
-        .form-group input[type="url"],
-        .form-group select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #555;
-            border-radius: 4px;
-            background-color: #222;
-            color: white;
-            outline: none;
-            font-size: 14px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            border-color: var(--focus-color);
-            box-shadow: 0 0 0 2px rgba(var(--focus-color-rgb), 0.3);
-        }
-
-        .form-group input[type="color"] {
-            width: 100%;
-            height: 40px;
-            padding: 2px;
-            background-color: #222;
-            border: 1px solid #555;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .form-group-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-            font-size: 14px;
-            color: #eee;
-            cursor: pointer;
-        }
-        
-        .form-group-checkbox input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: var(--focus-color);
-        }
-
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            margin-top: 35px;
-            padding-top: 15px;
-            border-top: 1px solid #555;
-        }
-
-        /* Buttons */
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-            transition: background 0.2s, transform 0.1s;
-        }
-
+        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: all 0.2s;}
         button:active { transform: scale(0.96); }
-
-        .btn-default { background-color: #444; color: white; border: 1px solid #666; }
-        .btn-default:hover { background-color: #555; }
-
+        
         .btn-cancel { background-color: #666; color: white; }
         .btn-cancel:hover { background-color: #888; }
-        
         .btn-save { background-color: var(--focus-color); color: #000; }
-        /* Focus color hover handled in JS dynamically or fallback below */
         .btn-save:hover { filter: brightness(1.1); }
-
+        
         .btn-delete { background-color: #ff5252; color: white; margin-right: auto; }
         .btn-delete:hover { background-color: #ff1a1a; }
+        
+        /* Outline style buttons for data management */
+        .btn-outline { background-color: transparent; color: white; border: 1px solid #666; }
+        .btn-outline:hover { background-color: rgba(255, 255, 255, 0.1); border-color: #888; }
         
         .btn-danger { background-color: transparent; color: #ff5252; border: 1px solid #ff5252; width: 100%; padding: 12px;}
         .btn-danger:hover { background-color: rgba(255, 82, 82, 0.1); }
 
-        .settings-btn-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
+        .settings-btn-group { display: flex; gap: 10px; margin-top: 10px; }
         .settings-btn-group button { flex: 1; }
 
-        /* Utilities */
-        .dragging {
-            opacity: 0.5;
-            transform: scale(0.9);
-            box-shadow: none !important;
-        }
+        .dragging { opacity: 0.5; transform: scale(0.9); box-shadow: none !important; }
     </style>
 </head>
 <body>
@@ -478,8 +324,7 @@
     </header>
 
     <main id="main-content">
-        <div class="grid-container" id="game-grid">
-            </div>
+        <div class="grid-container" id="game-grid"></div>
     </main>
 
     <footer>
@@ -512,7 +357,7 @@
             <div class="modal-actions">
                 <button class="btn-delete" id="btn-delete" style="display: none;">削除</button>
                 <button class="btn-cancel" onclick="closeGameModal()">キャンセル</button>
-                <button class="btn-save" onclick="saveGame()">保存</button>
+                <button class="btn-save" onclick="saveGame()">保存（全員に反映）</button>
             </div>
         </div>
     </div>
@@ -544,11 +389,11 @@
 
             <h3>外観設定</h3>
             <div class="form-group">
-                <label for="setting-accent-color">アクセントカラー (枠線やボタンの色)</label>
+                <label for="setting-accent-color">アクセントカラー</label>
                 <input type="color" id="setting-accent-color" value="#00e6e6">
             </div>
             <div class="form-group">
-                <label for="setting-bg-image">カスタム背景画像URL (空欄でデフォルトのダーク背景)</label>
+                <label for="setting-bg-image">カスタム背景画像URL</label>
                 <input type="url" id="setting-bg-image" placeholder="https://example.com/wallpaper.jpg">
             </div>
             <div style="display: flex; gap: 15px;">
@@ -584,8 +429,8 @@
             <h3>データ管理</h3>
             <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">設定データのエクスポート・インポートを行います。</p>
             <div class="settings-btn-group">
-                <button class="btn-default" onclick="exportData()">↓ エクスポート</button>
-                <button class="btn-default" onclick="document.getElementById('import-file').click()">↑ インポート</button>
+                <button class="btn-outline" onclick="exportData()">↓ エクスポート</button>
+                <button class="btn-outline" onclick="document.getElementById('import-file').click()">↑ インポート</button>
                 <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importData(event)">
             </div>
             <div style="margin-top: 15px;">
@@ -593,7 +438,7 @@
             </div>
 
             <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeSettings()">キャンセル</button>
+                <button class="btn-cancel" onclick="closeSettings()">閉じる</button>
                 <button class="btn-save" onclick="saveSettings()">設定を適用</button>
             </div>
         </div>
@@ -601,28 +446,20 @@
 
     <script>
         /**
-         * System Configuration Management
+         * System Configuration Management (Local Storage)
          */
         const DEFAULT_CONFIG = {
-            gridSize: '240px',
-            showTitle: true,
-            clockFormat: '24h',
-            accentColor: '#00e6e6',
-            bgImage: '',
-            borderRadius: '4px',
-            cardGap: '20px',
-            openInNewTab: true,
-            enableAnimations: true
+            gridSize: '240px', showTitle: true, clockFormat: '24h',
+            accentColor: '#00e6e6', bgImage: '', borderRadius: '4px',
+            cardGap: '20px', openInNewTab: true, enableAnimations: true
         };
 
-        // Merge saved config with defaults to ensure new settings are initialized
         let appConfig = { ...DEFAULT_CONFIG, ...(JSON.parse(localStorage.getItem('appConfig_v2')) || {}) };
 
         /**
-         * Game Data Management
+         * Game Data Management (Server Fetch & Auto Save)
          */
-        const STORAGE_KEY = 'myWebGameLauncherData_v4';
-        let games = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        let games = [];
 
         const elements = {
             grid: document.getElementById('game-grid'),
@@ -635,34 +472,42 @@
 
         let dragStartIndex = null;
 
-        /**
-         * Utility: Convert Hex color to RGB string "R, G, B" for CSS rgba() compatibility
-         */
-        function hexToRgb(hex) {
-            let r = 0, g = 0, b = 0;
-            hex = hex.replace('#', '');
-            if (hex.length === 3) {
-                r = parseInt(hex[0] + hex[0], 16);
-                g = parseInt(hex[1] + hex[1], 16);
-                b = parseInt(hex[2] + hex[2], 16);
-            } else if (hex.length === 6) {
-                r = parseInt(hex.substring(0, 2), 16);
-                g = parseInt(hex.substring(2, 4), 16);
-                b = parseInt(hex.substring(4, 6), 16);
+        // サーバーに現在の games 配列を保存する (PHP連携)
+        async function saveGamesToServer() {
+            try {
+                const response = await fetch('save_games.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(games)
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert('サーバーへの保存に失敗しました: ' + (errorData.message || '不明なエラー'));
+                }
+            } catch (error) {
+                console.error('通信エラー:', error);
+                alert('サーバーに接続できませんでした。');
             }
-            return `${r}, ${g}, ${b}`;
         }
 
-        /**
-         * Initialize application
-         */
-        function init() {
+        async function init() {
             applyConfig();
+            
+            try {
+                const response = await fetch('games.json?t=' + new Date().getTime());
+                if (response.ok) {
+                    games = await response.json();
+                } else {
+                    console.warn('games.jsonが見つかりません。');
+                }
+            } catch (error) {
+                console.error('通信エラー:', error);
+            }
+
             renderGames();
             setInterval(updateClock, 1000 * 60);
             updateClock();
             
-            // Event Listeners
             elements.searchInput.addEventListener('input', filterGames);
             window.addEventListener('click', (e) => {
                 if (e.target === elements.gameModal) closeGameModal();
@@ -670,13 +515,19 @@
             });
         }
 
-        /**
-         * Apply system configuration to the DOM
-         */
+        function hexToRgb(hex) {
+            let r = 0, g = 0, b = 0;
+            hex = hex.replace('#', '');
+            if (hex.length === 3) {
+                r = parseInt(hex[0]+hex[0], 16); g = parseInt(hex[1]+hex[1], 16); b = parseInt(hex[2]+hex[2], 16);
+            } else if (hex.length === 6) {
+                r = parseInt(hex.substring(0,2), 16); g = parseInt(hex.substring(2,4), 16); b = parseInt(hex.substring(4,6), 16);
+            }
+            return `${r}, ${g}, ${b}`;
+        }
+
         function applyConfig() {
             const root = document.documentElement;
-            
-            // Apply CSS Variables
             root.style.setProperty('--grid-min-width', appConfig.gridSize);
             root.style.setProperty('--focus-color', appConfig.accentColor);
             root.style.setProperty('--focus-color-rgb', hexToRgb(appConfig.accentColor));
@@ -684,37 +535,21 @@
             root.style.setProperty('--grid-gap', appConfig.cardGap);
             root.style.setProperty('--hover-scale', appConfig.enableAnimations ? '1.05' : '1.0');
 
-            // Apply Background Image
-            if (appConfig.bgImage && appConfig.bgImage.trim() !== "") {
-                document.body.style.backgroundImage = `url('${appConfig.bgImage}')`;
-            } else {
-                document.body.style.backgroundImage = 'none';
-            }
-            
-            // Toggle Layout Classes
+            document.body.style.backgroundImage = (appConfig.bgImage && appConfig.bgImage.trim() !== "") ? `url('${appConfig.bgImage}')` : 'none';
             document.body.classList.toggle('hide-titles', !appConfig.showTitle);
-            
-            // Re-render components if necessary
             updateClock();
         }
 
-        /**
-         * Image Generation Utilities
-         */
         function generateHash(str) {
             let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                hash = str.charCodeAt(i) + ((hash << 5) - hash);
-            }
+            for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
             return hash;
         }
 
         function generatePlaceholderImage(title) {
             const canvas = document.createElement('canvas');
-            canvas.width = 400; 
-            canvas.height = 225; 
+            canvas.width = 400; canvas.height = 225; 
             const ctx = canvas.getContext('2d');
-
             const hash = generateHash(title);
             const c1 = (hash & 0x00FFFFFF).toString(16).toUpperCase();
             const color1 = '#' + '00000'.substring(0, 6 - c1.length) + c1;
@@ -722,40 +557,25 @@
             const color2 = '#' + '00000'.substring(0, 6 - c2.length) + c2;
 
             const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            gradient.addColorStop(0, color1);
-            gradient.addColorStop(1, color2);
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = '#ffffff'; 
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+            gradient.addColorStop(0, color1); gradient.addColorStop(1, color2);
+            ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             
             const initials = title.substring(0, Math.min(title.length, 2)).toUpperCase();
             ctx.font = "bold 120px 'Segoe UI', sans-serif";
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-            ctx.shadowBlur = 15;
-            ctx.shadowOffsetX = 5;
-            ctx.shadowOffsetY = 5;
-
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ctx.shadowBlur = 15; ctx.shadowOffsetX = 5; ctx.shadowOffsetY = 5;
             ctx.fillText(initials, canvas.width / 2, canvas.height / 2);
-
             return canvas.toDataURL('image/png');
         }
 
-        /**
-         * Render Game Grid
-         */
         function renderGames() {
             elements.grid.innerHTML = '';
-
             games.forEach((game, index) => {
                 const card = document.createElement('div');
                 card.className = 'game-card';
                 card.dataset.title = game.name.toLowerCase();
                 card.draggable = true;
                 
-                // Drag & Drop bindings
                 card.addEventListener('dragstart', (e) => handleDragStart(e, index));
                 card.addEventListener('dragover', handleDragOver);
                 card.addEventListener('drop', (e) => handleDrop(e, index));
@@ -763,12 +583,10 @@
                 card.addEventListener('dragleave', handleDragLeave);
                 card.addEventListener('dragend', handleDragEnd);
 
-                // Click to launch
                 card.addEventListener('click', (e) => {
                     if(e.target.classList.contains('edit-btn')) return;
                     if(game.url) {
-                        const target = appConfig.openInNewTab ? '_blank' : '_self';
-                        window.open(game.url, target, 'noopener,noreferrer');
+                        window.open(game.url, appConfig.openInNewTab ? '_blank' : '_self', 'noopener,noreferrer');
                     }
                 });
 
@@ -780,7 +598,6 @@
                 elements.grid.appendChild(card);
             });
 
-            // Append "Add New" button
             const addCard = document.createElement('div');
             addCard.className = 'game-card add-card';
             addCard.id = 'add-card-btn';
@@ -792,32 +609,17 @@
             filterGames(); 
         }
 
-        /**
-         * Filter Logic
-         */
         function filterGames() {
             const searchTerm = elements.searchInput.value.toLowerCase().trim();
-            const cards = document.querySelectorAll('#game-grid .game-card:not(.add-card)');
-            const addCardBtn = document.getElementById('add-card-btn');
-            
-            cards.forEach(card => {
-                const title = card.dataset.title;
-                card.style.display = title.includes(searchTerm) ? 'flex' : 'none';
+            document.querySelectorAll('#game-grid .game-card:not(.add-card)').forEach(card => {
+                card.style.display = card.dataset.title.includes(searchTerm) ? 'flex' : 'none';
             });
-
-            if (addCardBtn) {
-                addCardBtn.style.display = searchTerm !== '' ? 'none' : 'flex';
-            }
+            const addCardBtn = document.getElementById('add-card-btn');
+            if (addCardBtn) addCardBtn.style.display = searchTerm !== '' ? 'none' : 'flex';
         }
 
-        /**
-         * Drag & Drop Handlers
-         */
         function handleDragStart(e, index) {
-            if (elements.searchInput.value.trim() !== '') {
-                e.preventDefault();
-                return;
-            }
+            if (elements.searchInput.value.trim() !== '') { e.preventDefault(); return; }
             dragStartIndex = index;
             e.currentTarget.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
@@ -830,12 +632,10 @@
         function handleDrop(e, dropIndex) {
             e.preventDefault();
             if (dragStartIndex === null || dragStartIndex === dropIndex) return;
-
             const item = games.splice(dragStartIndex, 1)[0];
             games.splice(dropIndex, 0, item);
-            
-            saveGamesToStorage();
             renderGames();
+            saveGamesToServer(); // ★自動保存
         }
 
         function handleDragEnd() {
@@ -844,99 +644,60 @@
             dragStartIndex = null;
         }
 
-        /**
-         * Game Modal Operations
-         */
         function openGameModal(id = null, event = null) {
             if (event) event.stopPropagation();
-
-            const titleEl = document.getElementById('modal-title');
-            const idInput = document.getElementById('game-id');
-            const nameInput = document.getElementById('game-name');
-            const urlInput = document.getElementById('game-url');
-            const imageInput = document.getElementById('game-image');
-            const deleteBtn = document.getElementById('btn-delete');
+            const idInput = document.getElementById('game-id'), nameInput = document.getElementById('game-name'),
+                  urlInput = document.getElementById('game-url'), imageInput = document.getElementById('game-image'),
+                  deleteBtn = document.getElementById('btn-delete'), titleEl = document.getElementById('modal-title');
 
             if (id !== null) {
                 const game = games.find(g => g.id === id);
                 if (!game) return;
-                titleEl.textContent = 'ゲームを編集';
-                idInput.value = game.id;
-                nameInput.value = game.name;
-                urlInput.value = game.url;
-                imageInput.value = game.image.startsWith('data:') ? '' : game.image;
-                deleteBtn.style.display = 'block';
-                deleteBtn.onclick = () => deleteGame(id);
+                titleEl.textContent = 'ゲームを編集'; idInput.value = game.id; nameInput.value = game.name;
+                urlInput.value = game.url; imageInput.value = game.image.startsWith('data:') ? '' : game.image;
+                deleteBtn.style.display = 'block'; deleteBtn.onclick = () => deleteGame(id);
             } else {
-                titleEl.textContent = 'ゲームを追加';
-                idInput.value = '';
-                nameInput.value = '';
-                urlInput.value = '';
-                imageInput.value = '';
-                deleteBtn.style.display = 'none';
+                titleEl.textContent = 'ゲームを追加'; idInput.value = ''; nameInput.value = '';
+                urlInput.value = ''; imageInput.value = ''; deleteBtn.style.display = 'none';
             }
-
-            elements.gameModal.classList.add('active');
-            nameInput.focus();
+            elements.gameModal.classList.add('active'); nameInput.focus();
         }
 
-        function closeGameModal() {
-            elements.gameModal.classList.remove('active');
-        }
+        function closeGameModal() { elements.gameModal.classList.remove('active'); }
 
         function saveGame() {
-            const idStr = document.getElementById('game-id').value;
-            const name = document.getElementById('game-name').value.trim();
-            const url = document.getElementById('game-url').value.trim();
+            const idStr = document.getElementById('game-id').value, name = document.getElementById('game-name').value.trim(),
+                  url = document.getElementById('game-url').value.trim();
             let image = document.getElementById('game-image').value.trim();
 
-            if (!name || !url) {
-                alert('タイトルとURLは必須項目です。');
-                return;
-            }
+            if (!name || !url) { alert('タイトルとURLは必須項目です。'); return; }
 
             if (idStr) { 
-                const id = parseInt(idStr, 10);
-                const index = games.findIndex(g => g.id === id);
+                const id = parseInt(idStr, 10), index = games.findIndex(g => g.id === id);
                 if (index !== -1) {
-                    const oldGame = games[index];
-                    if (!image) { 
-                        image = (oldGame.name !== name) ? generatePlaceholderImage(name) : oldGame.image;
-                    }
+                    if (!image) image = (games[index].name !== name) ? generatePlaceholderImage(name) : games[index].image;
                     games[index] = { id, name, url, image };
                 }
             } else { 
-                if (!image) { 
-                    image = generatePlaceholderImage(name);
-                }
-                const newId = games.length > 0 ? Math.max(...games.map(g => g.id)) + 1 : 1;
-                games.push({ id: newId, name, url, image });
+                if (!image) image = generatePlaceholderImage(name);
+                games.push({ id: games.length > 0 ? Math.max(...games.map(g => g.id)) + 1 : 1, name, url, image });
             }
-
-            saveGamesToStorage();
             renderGames();
             closeGameModal();
+            saveGamesToServer(); // ★自動保存
         }
 
         function deleteGame(id) {
             const game = games.find(g => g.id === id);
-            if (confirm(`「${game.name}」を削除しますか？`)) {
+            if (confirm(`「${game.name}」を完全に削除しますか？`)) {
                 games = games.filter(g => g.id !== id);
-                saveGamesToStorage();
                 renderGames();
                 closeGameModal();
+                saveGamesToServer(); // ★自動保存
             }
         }
 
-        function saveGamesToStorage() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(games));
-        }
-
-        /**
-         * System Settings Operations
-         */
         function openSettings() {
-            // Populate inputs with current config
             document.getElementById('setting-grid-size').value = appConfig.gridSize;
             document.getElementById('setting-show-title').checked = appConfig.showTitle;
             document.getElementById('setting-clock-format').value = appConfig.clockFormat;
@@ -946,16 +707,12 @@
             document.getElementById('setting-card-gap').value = appConfig.cardGap;
             document.getElementById('setting-new-tab').checked = appConfig.openInNewTab;
             document.getElementById('setting-animations').checked = appConfig.enableAnimations;
-            
             elements.settingsModal.classList.add('active');
         }
 
-        function closeSettings() {
-            elements.settingsModal.classList.remove('active');
-        }
+        function closeSettings() { elements.settingsModal.classList.remove('active'); }
 
         function saveSettings() {
-            // Read inputs and update config
             appConfig = {
                 gridSize: document.getElementById('setting-grid-size').value,
                 showTitle: document.getElementById('setting-show-title').checked,
@@ -967,33 +724,16 @@
                 openInNewTab: document.getElementById('setting-new-tab').checked,
                 enableAnimations: document.getElementById('setting-animations').checked
             };
-            
             localStorage.setItem('appConfig_v2', JSON.stringify(appConfig));
-            applyConfig();
-            closeSettings();
+            applyConfig(); closeSettings();
         }
 
-        /**
-         * Data Import / Export / Reset Operations
-         */
         function exportData() {
-            if (games.length === 0) {
-                alert("エクスポート対象のデータが存在しません。");
-                return;
-            }
-            const dataStr = JSON.stringify(games, null, 2);
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            
+            if (games.length === 0) { alert("エクスポート対象のデータが存在しません。"); return; }
             const a = document.createElement("a");
-            a.href = url;
-            const date = new Date().toISOString().split('T')[0];
-            a.download = `launcher_backup_${date}.json`;
-            document.body.appendChild(a);
-            a.click();
-            
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(games, null, 2)], { type: "application/json" }));
+            a.download = `launcher_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
         function importData(event) {
@@ -1005,12 +745,12 @@
                 try {
                     const importedData = JSON.parse(e.target.result);
                     if (Array.isArray(importedData)) {
-                        if (confirm("既存のゲーム一覧データは上書きされます。続行しますか？")) {
+                        if (confirm("既存のゲーム一覧データはすべて上書きされ、サーバーに保存されます。続行しますか？")) {
                             games = importedData;
-                            saveGamesToStorage();
                             renderGames();
+                            saveGamesToServer(); // ★自動保存
                             closeSettings();
-                            alert("データのインポートが完了しました。");
+                            alert("データのインポートが完了しました。全員に反映されます。");
                         }
                     } else {
                         throw new Error("Invalid format");
@@ -1024,33 +764,21 @@
         }
 
         function resetAllData() {
-            if (confirm("【警告】すべてのゲーム一覧データが削除されます。この操作は取り消せません。\n本当に初期化しますか？")) {
+            if (confirm("【警告】すべてのゲーム一覧データが削除され、サーバーからも消去されます。この操作は取り消せません。\n本当に初期化しますか？")) {
                 games = [];
-                saveGamesToStorage();
                 renderGames();
+                saveGamesToServer(); // ★自動保存
                 closeSettings();
             }
         }
 
-        /**
-         * Utility: Clock
-         */
         function updateClock() {
             const now = new Date();
-            let hours = now.getHours();
-            let minutes = String(now.getMinutes()).padStart(2, '0');
-            let period = '';
-
-            if (appConfig.clockFormat === '12h') {
-                period = hours >= 12 ? ' PM' : ' AM';
-                hours = hours % 12 || 12;
-            }
-            
-            hours = String(hours).padStart(2, '0');
-            elements.clock.textContent = `${hours}:${minutes}${period}`;
+            let hours = now.getHours(), minutes = String(now.getMinutes()).padStart(2, '0'), period = '';
+            if (appConfig.clockFormat === '12h') { period = hours >= 12 ? ' PM' : ' AM'; hours = hours % 12 || 12; }
+            elements.clock.textContent = `${String(hours).padStart(2, '0')}:${minutes}${period}`;
         }
 
-        // Boot the application
         init();
     </script>
 </body>
