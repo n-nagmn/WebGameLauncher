@@ -475,7 +475,7 @@
         // サーバーに現在の games 配列を保存する (PHP連携)
         async function saveGamesToServer() {
             try {
-                const response = await fetch('save_games.php', {
+                const response = await fetch('./save_games.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(games)
@@ -494,7 +494,7 @@
             applyConfig();
             
             try {
-                const response = await fetch('games.json?t=' + new Date().getTime());
+                const response = await fetch('./games.json?t=' + new Date().getTime());
                 if (response.ok) {
                     games = await response.json();
                 } else {
