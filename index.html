@@ -723,7 +723,7 @@
             <div style="display: flex; gap: 15px;">
                 <div class="form-group" style="flex: 1;">
                     <label for="game-category">カテゴリ</label>
-                    <select id="game-category">
+                    <select id="game-category" onchange="App.handleCategoryChange(this)">
                         <option value="">未分類</option>
                         <option value="action">アクション</option>
                         <option value="puzzle">パズル</option>
@@ -733,7 +733,9 @@
                         <option value="strategy">ストラテジー</option>
                         <option value="casual">カジュアル</option>
                         <option value="retro">レトロ</option>
+                        <option value="__new__">＋ 新規カテゴリ...</option>
                     </select>
+                    <input type="text" id="game-category-new" placeholder="新規カテゴリ名" style="display:none; margin-top:8px; width:100%; padding:10px 14px; border:1px solid rgba(255,255,255,0.1); border-radius:6px; background:rgba(0,0,0,0.3); color:white; outline:none; font-size:14px;">
                 </div>
                 <div class="form-group" style="flex: 1;">
                     <label>プレイ人数</label>
@@ -1376,7 +1378,17 @@
                 nameInput.value = game.name;
                 urlInput.value = game.url;
                 imageInput.value = (game.image && !game.image.startsWith('data:')) ? game.image : '';
-                categoryInput.value = game.category || '';
+                const existingOptions = Array.from(categoryInput.options).map(o => o.value);
+                if (game.category && !existingOptions.includes(game.category)) {
+                    categoryInput.value = '__new__';
+                    const newInput = document.getElementById('game-category-new');
+                    newInput.style.display = 'block';
+                    newInput.value = game.category;
+                } else {
+                    categoryInput.value = game.category || '';
+                    document.getElementById('game-category-new').style.display = 'none';
+                    document.getElementById('game-category-new').value = '';
+                }
                 document.getElementById('game-players-min').value = game.playersMin || '';
                 document.getElementById('game-players-max').value = game.playersMax || '';
                 deleteBtn.style.display = 'flex';
@@ -1388,6 +1400,8 @@
                 urlInput.value = '';
                 imageInput.value = '';
                 categoryInput.value = '';
+                document.getElementById('game-category-new').style.display = 'none';
+                document.getElementById('game-category-new').value = '';
                 document.getElementById('game-players-min').value = '';
                 document.getElementById('game-players-max').value = '';
                 deleteBtn.style.display = 'none';
@@ -1409,7 +1423,10 @@
             const idStr = document.getElementById('game-id').value;
             const name = document.getElementById('game-name').value.trim();
             const url = document.getElementById('game-url').value.trim();
-            const category = document.getElementById('game-category').value;
+            let category = document.getElementById('game-category').value;
+            if (category === '__new__') {
+                category = document.getElementById('game-category-new').value.trim();
+            }
             let image = document.getElementById('game-image').value.trim();
 
             const playersMin = document.getElementById('game-players-min').value;
@@ -1650,6 +1667,17 @@
             });
         }
 
+        function handleCategoryChange(select) {
+            const newInput = document.getElementById('game-category-new');
+            if (select.value === '__new__') {
+                newInput.style.display = 'block';
+                newInput.focus();
+            } else {
+                newInput.style.display = 'none';
+                newInput.value = '';
+            }
+        }
+
         // Public API
         return {
             init,
@@ -1664,7 +1692,8 @@
             importData,
             resetAllData,
             setCategory,
-            setPlayerFilter
+            setPlayerFilter,
+            handleCategoryChange
         };
     })();
 
