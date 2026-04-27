@@ -1061,34 +1061,20 @@
 
             // Player filter
             const playerContainer = document.getElementById('player-filter');
-            const playerRanges = new Set();
-            games.forEach(g => {
-                const min = parseInt(g.playersMin, 10) || 0;
-                const max = parseInt(g.playersMax, 10) || 0;
-                if (min > 0 || max > 0) {
-                    if (min === max) {
-                        playerRanges.add(`${min}-${min}`);
-                    } else {
-                        playerRanges.add(`${min}-${max}`);
-                    }
-                }
-            });
-
             let playerHtml = `<div class="player-chip ${currentPlayerFilter === 'all' ? 'active' : ''}" data-players="all" onclick="App.setPlayerFilter('all')">全人数</div>`;
 
-            // Sort ranges logically
-            const sortedRanges = Array.from(playerRanges).sort((a, b) => {
-                const [aMin] = a.split('-').map(Number);
-                const [bMin] = b.split('-').map(Number);
-                return aMin - bMin;
-            });
+            // 固定のフィルター項目を定義
+            const filterOptions = [
+                { id: '1', label: '1人', isMulti: false },
+                { id: '2', label: '2人', isMulti: true },
+                { id: '3', label: '3人', isMulti: true },
+                { id: '4', label: '4人', isMulti: true },
+                { id: '5plus', label: '5人以上', isMulti: true }
+            ];
 
-            sortedRanges.forEach(range => {
-                const [min, max] = range.split('-').map(Number);
-                const label = min === max ? `${min}人` : `${min}～${max}人`;
-                const isMulti = max > 1;
-                const isActive = currentPlayerFilter === range;
-                playerHtml += `<div class="player-chip ${isMulti ? 'multi' : ''} ${isActive ? 'active' : ''}" data-players="${range}" onclick="App.setPlayerFilter('${range}')">${escapeHtml(label)}</div>`;
+            filterOptions.forEach(opt => {
+                const isActive = currentPlayerFilter === opt.id;
+                playerHtml += `<div class="player-chip ${opt.isMulti ? 'multi' : ''} ${isActive ? 'active' : ''}" data-players="${opt.id}" onclick="App.setPlayerFilter('${opt.id}')">${escapeHtml(opt.label)}</div>`;
             });
             playerContainer.innerHTML = playerHtml;
         }
@@ -1105,16 +1091,23 @@
 
                 let matchesPlayers = true;
                 if (currentPlayerFilter !== 'all') {
-                    const [filterMin, filterMax] = currentPlayerFilter.split('-').map(Number);
                     const gameMin = parseInt(game.playersMin, 10) || 0;
                     const gameMax = parseInt(game.playersMax, 10) || 0;
+                    
                     if (gameMin === 0 && gameMax === 0) {
-                        matchesPlayers = false;
+                        matchesPlayers = false; // 人数設定がないゲームは除外
                     } else {
                         const gMin = gameMin || 1;
                         const gMax = gameMax || gMin;
-                        // Check if ranges overlap
-                        matchesPlayers = (gMin <= filterMax && gMax >= filterMin);
+                        
+                        if (currentPlayerFilter === '5plus') {
+                            // 「5人以上」の判定：最大プレイ人数が5以上であれば表示
+                            matchesPlayers = (gMax >= 5);
+                        } else {
+                            // 1〜4人の判定：選択した人数が、ゲームの最小〜最大の範囲内に入っているか
+                            const target = parseInt(currentPlayerFilter, 10);
+                            matchesPlayers = (target >= gMin && target <= gMax);
+                        }
                     }
                 }
 
