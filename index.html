@@ -662,6 +662,34 @@
         .settings-btn-group { display: flex; gap: 10px; margin-top: 10px; }
         .settings-btn-group button { flex: 1; justify-content: center; }
 
+        /* カテゴリ管理用のチップ */
+        .category-manage-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 13px;
+            margin: 0 8px 8px 0;
+        }
+        .category-manage-chip button {
+            background: transparent;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            padding: 0 4px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .category-manage-chip button:hover {
+            color: #ff1a1a;
+            transform: scale(1.2);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             header { padding: 0 20px; }
@@ -857,6 +885,11 @@
                     </select>
                 </div>
             </div>
+
+            <h3>カテゴリ管理</h3>
+            <p style="font-size: 12px; color: #888; margin-bottom: 10px;">不要になったカテゴリを削除します（対象のゲームは「未分類」になります）。</p>
+            <div id="settings-category-list" style="margin-bottom: 20px;">
+                </div>
 
             <h3>動作設定</h3>
             <label class="form-group-checkbox">
@@ -1472,6 +1505,60 @@
             }
         }
 
+        function renderSettingsCategories() {
+            const container = document.getElementById('settings-category-list');
+            const categories = new Set(games.map(g => g.category).filter(Boolean));
+
+            if (categories.size === 0) {
+                container.innerHTML = '<span style="color:#666; font-size:12px;">現在使用されているカテゴリはありません。</span>';
+                return;
+            }
+
+            let html = '';
+            categories.forEach(cat => {
+                const label = CATEGORY_LABELS[cat] || cat;
+                // シングルクォーテーションのエスケープ処理
+                const safeCat = escapeHtml(cat).replace(/'/g, "\\'");
+                html += `
+                    <div class="category-manage-chip">
+                        <span>${escapeHtml(label)}</span>
+                        <button type="button" title="削除" onclick="App.deleteCategory('${safeCat}')">×</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function deleteCategory(cat) {
+            const label = CATEGORY_LABELS[cat] || cat;
+            if (!confirm(`カテゴリ「${label}」を削除しますか？\n※このカテゴリが設定されているすべてのゲームが「未分類」になります。`)) {
+                return;
+            }
+
+            let isUpdated = false;
+            games = games.map(g => {
+                if (g.category === cat) {
+                    isUpdated = true;
+                    return { ...g, category: '', updatedAt: Date.now() };
+                }
+                return g;
+            });
+
+            if (isUpdated) {
+                saveGamesToServer(); // サーバーに保存
+                renderGames();       // メイン画面を更新
+            }
+
+            // もし削除したカテゴリで絞り込み中だった場合は「すべて」に戻す
+            if (currentCategory === cat) {
+                currentCategory = 'all';
+                renderGames();
+            }
+
+            renderSettingsCategories(); // 設定画面のリストを再描画
+            showToast(`カテゴリ「${label}」を削除しました`, 'success');
+        }
+
         function openSettings() {
             document.getElementById('setting-grid-size').value = appConfig.gridSize;
             document.getElementById('setting-show-title').checked = appConfig.showTitle;
@@ -1483,6 +1570,7 @@
             document.getElementById('setting-new-tab').checked = appConfig.openInNewTab;
             document.getElementById('setting-animations').checked = appConfig.enableAnimations;
             document.getElementById('setting-local-backup').checked = appConfig.localBackup;
+            renderSettingsCategories();
             els.settingsModal.classList.add('active');
         }
 
@@ -1678,6 +1766,7 @@
             closeGameModal,
             saveGame,
             deleteGame,
+            deleteCategory,
             openSettings,
             closeSettings,
             saveSettings,
