@@ -1,7 +1,4 @@
 <?php
-/**
- * Web Game Launcher Pro - Link Update Checker (Hybrid V2)
- */
 
 $file_path = __DIR__ . '/games.json';
 if (!file_exists($file_path)) die("games.json not found.\n");
@@ -10,7 +7,7 @@ $games = json_decode(file_get_contents($file_path), true);
 $is_updated = false;
 
 // 内部サーバーのIPやドメイン（これを含むURLは中身をハッシュ比較する）
-$internal_hosts = ['172.23.72.107', 'ubuntu.local', 'www.momiji.ip-ddns.com'];
+$internal_hosts = ['172.23.72.107', 'ubuntu.local'];
 
 foreach ($games as &$game) {
     $url = $game['url'];
@@ -28,10 +25,16 @@ foreach ($games as &$game) {
            ========================================================= */
         $html = @file_get_contents($url);
         if ($html !== false) {
-            $current_hash = md5($html); // ファイルの内容からハッシュ値を生成
+            $current_hash = md5($html);
             
-            // 前回のハッシュ値と異なる場合 ＝ 中身が更新された！
-            if (!isset($game['lastHash']) || $game['lastHash'] !== $current_hash) {
+            if (empty($game['lastHash'])) {
+                // 【初回】ベースとなるハッシュ値を記録するのみ（UPDATEにはしない）
+                $game['lastHash'] = $current_hash;
+                $game['remoteUpdatedAt'] = time();
+                $is_updated = true; // 記録をgames.jsonに保存するためtrueにする
+                echo "[Internal] Initial hash recorded: {$game['name']}\n";
+            } elseif ($game['lastHash'] !== $current_hash) {
+                // 【2回目以降】前回記録したハッシュ値と異なる場合 ＝ 更新！
                 $game['lastHash'] = $current_hash;
                 $game['hasUpdate'] = true;
                 $game['remoteUpdatedAt'] = time();
@@ -57,7 +60,14 @@ foreach ($games as &$game) {
         if ($info['http_code'] == 200) {
             if (preg_match('/Last-Modified:\s*(.+)/i', $response, $matches)) {
                 $timestamp = strtotime(trim($matches[1]));
-                if (!isset($game['remoteUpdatedAt']) || $timestamp > $game['remoteUpdatedAt']) {
+                
+                if (empty($game['remoteUpdatedAt'])) {
+                    // 【初回】ベースとなるヘッダー日時を記録するのみ（UPDATEにはしない）
+                    $game['remoteUpdatedAt'] = $timestamp;
+                    $is_updated = true;
+                    echo "[External] Initial header recorded: {$game['name']}\n";
+                } elseif ($timestamp > $game['remoteUpdatedAt']) {
+                    // 【2回目以降】記録されている日時より新しい場合 ＝ 更新！
                     $game['remoteUpdatedAt'] = $timestamp;
                     $game['hasUpdate'] = true;
                     $is_updated = true;
