@@ -1184,11 +1184,26 @@
                     launchGame(game);
                 });
 
-                const isNew = game.createdAt && (Date.now() - game.createdAt < 7 * 24 * 60 * 60 * 1000);
-                let badge = '';
+                // --- 個人の既読履歴をLocalStorageから取得 ---
+                const readHistory = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
+                const lastReadTime = readHistory[game.id] || 0;
+
+                // サーバーのタイムスタンプ（JSのミリ秒とPHPの秒が混在する対策）
+                const createdAtMs = game.createdAt ? (game.createdAt > 9999999999 ? game.createdAt : game.createdAt * 1000) : 0;
+                const remoteUpdatedMs = game.remoteUpdatedAt ? (game.remoteUpdatedAt > 9999999999 ? game.remoteUpdatedAt : game.remoteUpdatedAt * 1000) : 0;
                 
-                // 更新フラグがあれば UPDATE バッジを表示 (NEWより優先)
-                if (game.hasUpdate) {
+                // 手動編集時(updatedAt)とクローラー検知時(remoteUpdatedAt)の新しい方を「最終更新日」とする
+                const manualUpdatedMs = game.updatedAt ? (game.updatedAt > 9999999999 ? game.updatedAt : game.updatedAt * 1000) : 0;
+                const latestUpdateMs = Math.max(remoteUpdatedMs, manualUpdatedMs);
+
+                // --- 条件判定 ---
+                // NEW: 作成から7日以内 ＆ まだこのブラウザで開いていない
+                const isNew = createdAtMs && (Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000) && (lastReadTime < createdAtMs);
+                // UPDATE: NEWではない ＆ このブラウザで最後に開いた時刻より後に更新されている
+                const isUpdate = !isNew && latestUpdateMs && (lastReadTime < latestUpdateMs);
+
+                let badge = '';
+                if (isUpdate) {
                     badge = '<span class="card-badge" style="background: var(--warning-color); color: #000;">UPDATE</span>';
                 } else if (isNew) {
                     badge = '<span class="card-badge new">NEW</span>';
@@ -1259,15 +1274,17 @@
             if (!game.url) return;
             window.open(game.url, appConfig.openInNewTab ? '_blank' : '_self', 'noopener,noreferrer');
             
+            // 個人の既読時刻をLocalStorageに記録
+            const readHistory = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
+            readHistory[game.id] = Date.now();
+            localStorage.setItem('gameReadHistory', JSON.stringify(readHistory));
+
+            // サーバー側の最終プレイ時刻も更新（人気順ソートなどに使う用途として残す）
             game.lastPlayed = Date.now();
-            
-            // 起動したら更新フラグをリセットする
-            if (game.hasUpdate) {
-                game.hasUpdate = false;
-                renderGames(); // バッジを即座に消すために画面を再描画
-            }
-            
             saveGamesToServer();
+
+            // 画面を再描画して個人のバッジを消す
+            renderGames(); 
         }
 
         function setCategory(cat) {
@@ -1492,7 +1509,6 @@
                     games[index] = { 
                         ...games[index], 
                         id, name, url, image, category, playersMin, playersMax,
-                        hasUpdate: true,
                         updatedAt: Date.now()
                     };
                     showToast('ゲームを更新しました', 'success');
