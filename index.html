@@ -1185,7 +1185,15 @@
                 });
 
                 const isNew = game.createdAt && (Date.now() - game.createdAt < 7 * 24 * 60 * 60 * 1000);
-                const badge = isNew ? '<span class="card-badge new">NEW</span>' : '';
+                let badge = '';
+                
+                // 更新フラグがあれば UPDATE バッジを表示 (NEWより優先)
+                if (game.hasUpdate) {
+                    badge = '<span class="card-badge" style="background: var(--warning-color); color: #000;">UPDATE</span>';
+                } else if (isNew) {
+                    badge = '<span class="card-badge new">NEW</span>';
+                }
+                
                 const catLabel = game.category ? (CATEGORY_LABELS[game.category] || game.category) : '';
                 const catHtml = catLabel ? `<div class="card-category">${escapeHtml(catLabel)}</div>` : '';
 
@@ -1250,8 +1258,15 @@
         function launchGame(game) {
             if (!game.url) return;
             window.open(game.url, appConfig.openInNewTab ? '_blank' : '_self', 'noopener,noreferrer');
-            // Update last played
+            
             game.lastPlayed = Date.now();
+            
+            // 起動したら更新フラグをリセットする
+            if (game.hasUpdate) {
+                game.hasUpdate = false;
+                renderGames(); // バッジを即座に消すために画面を再描画
+            }
+            
             saveGamesToServer();
         }
 
