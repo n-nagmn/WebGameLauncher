@@ -120,7 +120,10 @@ foreach ($decoded as $index => $game) {
         'playersMax' => isset($game['playersMax']) ? max(1, intval($game['playersMax'])) : 0,
         'createdAt' => isset($game['createdAt']) ? intval($game['createdAt']) : time(),
         'updatedAt' => isset($game['updatedAt']) ? intval($game['updatedAt']) : time(),
-        'lastPlayed' => isset($game['lastPlayed']) ? intval($game['lastPlayed']) : 0
+        'lastPlayed' => isset($game['lastPlayed']) ? intval($game['lastPlayed']) : 0,
+        'hasUpdate' => isset($game['hasUpdate']) ? filter_var($game['hasUpdate'], FILTER_VALIDATE_BOOLEAN) : false,
+        'remoteUpdatedAt' => isset($game['remoteUpdatedAt']) ? intval($game['remoteUpdatedAt']) : 0,
+        'lastHash' => isset($game['lastHash']) ? htmlspecialchars(trim($game['lastHash']), ENT_QUOTES, 'UTF-8') : ''
     ];
 }
 
