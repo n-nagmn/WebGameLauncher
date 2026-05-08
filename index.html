@@ -1197,12 +1197,17 @@
                 const latestUpdateMs = Math.max(remoteUpdatedMs, manualUpdatedMs);
 
                 // --- 条件判定 ---
+                // ★追加: 「作成時以降に実際の更新があったか」（作成日と更新日に1秒以上の差があるかで判定）
+                const isActuallyUpdated = (latestUpdateMs - createdAtMs) > 1000;
+
                 // NEW: 作成から7日以内 ＆ まだこのブラウザで開いていない
                 const isNew = createdAtMs && (Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000) && (lastReadTime < createdAtMs);
-                // UPDATE: NEWではない ＆ このブラウザで最後に開いた時刻より後に更新されている
-                const isUpdate = !isNew && latestUpdateMs && (lastReadTime < latestUpdateMs);
+                
+                // UPDATE: 実際に更新されており ＆ このブラウザで最後に開いた時刻より後に更新された
+                const isUpdate = isActuallyUpdated && (lastReadTime < latestUpdateMs);
 
                 let badge = '';
+                // UPDATEバッジを優先して表示
                 if (isUpdate) {
                     badge = '<span class="card-badge" style="background: var(--warning-color); color: #000;">UPDATE</span>';
                 } else if (isNew) {
