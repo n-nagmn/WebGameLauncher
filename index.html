@@ -514,9 +514,39 @@
             padding-bottom: 16px;
             font-weight: 700;
         }
+        
+        /* 設定モーダル内のグループ化スタイル */
+        .setting-group {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 24px;
+        }
+        .setting-group > .form-group:last-child,
+        .setting-group > .form-group-checkbox:last-child {
+            margin-bottom: 0;
+        }
+        .sub-section {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .sub-section h4 {
+            font-size: 14px;
+            color: var(--focus-color);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .sub-section p {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
         .modal-content h3 {
             font-size: 15px;
-            margin: 32px 0 16px 0;
+            margin: 32px 0 12px 0;
             color: var(--text-color);
             display: flex;
             align-items: center;
@@ -525,7 +555,7 @@
             border-bottom: 1px dashed rgba(255,255,255,0.1);
             padding-bottom: 8px;
         }
-
+        
         .form-group { margin-bottom: 16px; }
         .form-group label {
             display: block;
@@ -633,7 +663,7 @@
         .btn-danger { background: transparent; color: var(--danger-color); border: 1px solid rgba(255,82,82,0.4); width: 100%; padding: 12px; }
         .btn-danger:hover { background: rgba(255, 82, 82, 0.1); }
 
-        .settings-btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        .settings-btn-group { display: flex; gap: 10px; }
         .settings-btn-group button { flex: 1; justify-content: center; }
 
         .category-manage-chip {
@@ -681,7 +711,7 @@
 
     <header>
         <div class="header-left">
-            <div class="logo">🎮 Game Launcher</div>
+            <div class="logo">Web Game Launcher</div>
             <div class="category-filter" id="category-filter"></div>
             <div class="player-filter" id="player-filter"></div>
         </div>
@@ -690,8 +720,6 @@
                 <span>🔍</span>
                 <input type="text" id="search-input" placeholder="検索..." autocomplete="off">
             </div>
-            <span class="header-info-text">|</span>
-            <span id="clock">00:00</span>
             <span class="header-info-text">|</span>
             <div class="settings-btn" onclick="App.openSettings()" title="設定 (S)" tabindex="0" role="button" aria-label="設定">⚙️</div>
         </div>
@@ -804,83 +832,93 @@
 
             <h3>個人設定</h3>
             <p style="font-size: 12px; color: #888; margin-bottom: 12px;">これらの設定はあなたのブラウザのみに保存され、他の人には影響しません。</p>
-            <div class="form-group">
-                <label for="setting-grid-size">カードサイズ</label>
-                <select id="setting-grid-size">
-                    <option value="180px">小 (180px)</option>
-                    <option value="240px">中 (240px) - 標準</option>
-                    <option value="300px">大 (300px)</option>
-                    <option value="360px">特大 (360px)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="setting-clock-format">時計のフォーマット</label>
-                <select id="setting-clock-format">
-                    <option value="24h">24時間表記 (15:00)</option>
-                    <option value="12h">12時間表記 (03:00 PM)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="setting-accent-color">アクセントカラー</label>
-                <input type="color" id="setting-accent-color" value="#00e6e6">
-            </div>
-            <div style="display: flex; gap: 15px;">
-                <div class="form-group" style="flex: 1;">
-                    <label for="setting-border-radius">カードの角丸</label>
-                    <select id="setting-border-radius">
-                        <option value="0px">直角</option>
-                        <option value="4px">少し丸み (4px)</option>
-                        <option value="8px">丸み (8px) - 標準</option>
-                        <option value="16px">かなり丸み (16px)</option>
-                        <option value="24px">すごく丸み (24px)</option>
+            <div class="setting-group">
+                <div class="form-group">
+                    <label for="setting-grid-size">カードサイズ</label>
+                    <select id="setting-grid-size">
+                        <option value="180px">小 (180px)</option>
+                        <option value="240px">中 (240px) - 標準</option>
+                        <option value="300px">大 (300px)</option>
+                        <option value="360px">特大 (360px)</option>
                     </select>
                 </div>
-                <div class="form-group" style="flex: 1;">
-                    <label for="setting-card-gap">カードの間隔</label>
-                    <select id="setting-card-gap">
-                        <option value="10px">狭い (10px)</option>
-                        <option value="20px">標準 (20px)</option>
-                        <option value="32px">広い (32px)</option>
-                        <option value="48px">すごく広い (48px)</option>
+                <div class="form-group">
+                    <label for="setting-clock-format">時計のフォーマット</label>
+                    <select id="setting-clock-format">
+                        <option value="24h">24時間表記 (15:00)</option>
+                        <option value="12h">12時間表記 (03:00 PM)</option>
                     </select>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label for="setting-accent-color">アクセントカラー</label>
+                    <input type="color" id="setting-accent-color" value="#00e6e6">
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="setting-border-radius">カードの角丸</label>
+                        <select id="setting-border-radius">
+                            <option value="0px">直角</option>
+                            <option value="4px">少し丸み (4px)</option>
+                            <option value="8px">丸み (8px) - 標準</option>
+                            <option value="16px">かなり丸み (16px)</option>
+                            <option value="24px">すごく丸み (24px)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label for="setting-card-gap">カードの間隔</label>
+                        <select id="setting-card-gap">
+                            <option value="10px">狭い (10px)</option>
+                            <option value="20px">標準 (20px)</option>
+                            <option value="32px">広い (32px)</option>
+                            <option value="48px">すごく広い (48px)</option>
+                        </select>
+                    </div>
+                </div>
 
-            <label class="form-group-checkbox">
-                <input type="checkbox" id="setting-show-title">
-                <span>カードの下部にタイトルを表示する</span>
-            </label>
-            <label class="form-group-checkbox">
-                <input type="checkbox" id="setting-new-tab">
-                <span>ゲームを新しいタブで開く</span>
-            </label>
-            <label class="form-group-checkbox">
-                <input type="checkbox" id="setting-animations">
-                <span>ホバー時のアニメーションを有効にする</span>
-            </label>
-            <label class="form-group-checkbox">
-                <input type="checkbox" id="setting-local-backup">
-                <span>ブラウザにローカルバックアップを作成する</span>
-            </label>
+                <label class="form-group-checkbox">
+                    <input type="checkbox" id="setting-show-title">
+                    <span>カードの下部にタイトルを表示する</span>
+                </label>
+                <label class="form-group-checkbox">
+                    <input type="checkbox" id="setting-new-tab">
+                    <span>ゲームを新しいタブで開く</span>
+                </label>
+                <label class="form-group-checkbox">
+                    <input type="checkbox" id="setting-animations">
+                    <span>ホバー時のアニメーションを有効にする</span>
+                </label>
+                <label class="form-group-checkbox">
+                    <input type="checkbox" id="setting-local-backup">
+                    <span>ブラウザにローカルバックアップを作成する</span>
+                </label>
+            </div>
 
             <h3 class="global-setting">全体設定</h3>
             <p style="font-size: 12px; color: #888; margin-bottom: 12px;">変更すると、アクセスしている全員の画面に反映されます。</p>
             
-            <div class="form-group">
-                <label for="setting-bg-image">カスタム背景画像URL</label>
-                <input type="url" id="setting-bg-image" placeholder="https://example.com/wallpaper.jpg">
+            <div class="setting-group">
+                <div class="form-group">
+                    <label for="setting-bg-image">カスタム背景画像URL</label>
+                    <input type="url" id="setting-bg-image" placeholder="https://example.com/wallpaper.jpg">
+                </div>
+
+                <div class="sub-section">
+                    <h4>カテゴリ管理</h4>
+                    <p>不要になったカテゴリを削除します（対象のゲームは「未分類」になります）。</p>
+                    <div id="settings-category-list"></div>
+                </div>
+
+                <div class="sub-section">
+                    <h4>データ管理</h4>
+                    <p>ゲームデータの書き出し・読み込みを行います。</p>
+                    <div class="settings-btn-group">
+                        <button class="btn-outline" onclick="App.exportData()">↓ エクスポート</button>
+                        <button class="btn-outline" onclick="document.getElementById('import-file').click()">↑ インポート</button>
+                        <input type="file" id="import-file" style="display: none;" accept=".json" onchange="App.importData(event)">
+                    </div>
+                </div>
             </div>
 
-            <h3 class="global-setting">カテゴリ管理</h3>
-            <p style="font-size: 12px; color: #888; margin-bottom: 10px;">不要になったカテゴリを削除します（対象のゲームは「未分類」になります）。</p>
-            <div id="settings-category-list" style="margin-bottom: 20px;"></div>
-
-            <h3 class="global-setting">データ管理</h3>
-            <div class="settings-btn-group">
-                <button class="btn-outline" onclick="App.exportData()">↓ エクスポート</button>
-                <button class="btn-outline" onclick="document.getElementById('import-file').click()">↑ インポート</button>
-                <input type="file" id="import-file" style="display: none;" accept=".json" onchange="App.importData(event)">
-            </div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="App.closeSettings()">キャンセル</button>
                 <button class="btn-save" onclick="App.saveSettings()">設定を保存</button>
@@ -1696,6 +1734,8 @@
         }
 
         function updateClock() {
+            if (!els.clock) return;
+            
             const now = new Date();
             let hours = now.getHours();
             const minutes = String(now.getMinutes()).padStart(2, '0');
