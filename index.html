@@ -1197,7 +1197,7 @@
 
                 const isActuallyUpdated = (latestUpdateMs - createdAtMs) > 1000;
                 const isNew = createdAtMs && (Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000) && (lastReadTime < createdAtMs);
-                const isUpdate = (isActuallyUpdated && (lastReadTime < latestUpdateMs)) || game.hasUpdate;
+                const isUpdate = (lastReadTime < latestUpdateMs) && (isActuallyUpdated || game.hasUpdate);
 
                 let badge = '';
                 if (isUpdate) {
@@ -1282,6 +1282,7 @@
             if (globalIndex > -1) {
                 const [playedGame] = games.splice(globalIndex, 1);
                 playedGame.lastPlayed = Date.now();
+                playedGame.hasUpdate = false;
                 games.unshift(playedGame); // 先頭に追加
                 saveGamesToServer();       // サーバーに順番を保存
                 renderGames();             // 画面を再描画
