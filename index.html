@@ -1434,6 +1434,25 @@
             const deleteBtn = document.getElementById('btn-delete');
             const titleEl = document.getElementById('modal-title');
 
+            const defaultCategories = ['action', 'puzzle', 'rpg', 'shooter', 'sports', 'strategy', 'casual', 'retro'];
+            const allUsedCategories = new Set(games.map(g => g.category).filter(Boolean));
+            
+            let optionsHtml = `<option value="">未分類</option>`;
+            
+            defaultCategories.forEach(cat => {
+                optionsHtml += `<option value="${cat}">${CATEGORY_LABELS[cat]}</option>`;
+            });
+            
+            allUsedCategories.forEach(cat => {
+                if (!defaultCategories.includes(cat)) {
+                    optionsHtml += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
+                }
+            });
+            
+            optionsHtml += `<option value="__new__">＋ 新規カテゴリ...</option>`;
+            
+            categoryInput.innerHTML = optionsHtml;
+
             if (id !== null) {
                 const game = games.find(g => g.id === id);
                 if (!game) return;
