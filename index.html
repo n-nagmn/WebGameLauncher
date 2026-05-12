@@ -287,7 +287,7 @@
         }
 
         .game-card:hover, .game-card.focused {
-            transform: scale(1.04);
+            transform: scale(var(--hover-scale, 1.04));
             border-color: var(--focus-color);
             z-index: 10;
             box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(var(--focus-color-rgb), 0.3);
@@ -308,7 +308,6 @@
         .game-card img.loading { opacity: 0.3; }
         .game-card img.loaded { opacity: 1; }
 
-        
         .player-badge {
             position: absolute;
             bottom: 8px;
@@ -392,7 +391,7 @@
             background: rgba(255, 255, 255, 0.08);
             border-color: var(--focus-color);
             color: var(--focus-color);
-            transform: scale(1.02);
+            transform: scale(var(--hover-scale, 1.02));
         }
 
         .edit-btn {
@@ -427,26 +426,10 @@
         /* Drag & Drop */
         .game-card.dragging {
             opacity: 0.4;
-            transform: scale(0.92);
-            box-shadow: none;
+            transform: scale(0.92) !important;
+            box-shadow: none !important;
             border: 2px dashed var(--focus-color);
         }
-
-        .drop-indicator {
-            position: absolute;
-            left: -12px;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: var(--focus-color);
-            border-radius: 2px;
-            opacity: 0;
-            transition: opacity 0.15s;
-            pointer-events: none;
-            z-index: 50;
-            box-shadow: 0 0 10px var(--focus-color);
-        }
-        .drop-indicator.active { opacity: 1; }
 
         /* Empty State */
         .empty-state {
@@ -532,23 +515,15 @@
             font-weight: 700;
         }
         .modal-content h3 {
-            font-size: 14px;
-            margin: 28px 0 12px 0;
-            color: var(--focus-color);
+            font-size: 15px;
+            margin: 32px 0 16px 0;
+            color: var(--text-color);
             display: flex;
             align-items: center;
             gap: 8px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .modal-content h3::before {
-            content: "";
-            display: block;
-            width: 4px;
-            height: 16px;
-            background: var(--focus-color);
-            border-radius: 2px;
+            border-bottom: 1px dashed rgba(255,255,255,0.1);
+            padding-bottom: 8px;
         }
 
         .form-group { margin-bottom: 16px; }
@@ -661,7 +636,6 @@
         .settings-btn-group { display: flex; gap: 10px; margin-top: 10px; }
         .settings-btn-group button { flex: 1; justify-content: center; }
 
-        /* カテゴリ管理用のチップ */
         .category-manage-chip {
             display: inline-flex;
             align-items: center;
@@ -703,7 +677,6 @@
 </head>
 <body>
 
-    <!-- Toast Container -->
     <div id="toast-container"></div>
 
     <header>
@@ -737,7 +710,6 @@
         <div class="footer-btn"><span class="key-icon">Del</span> 削除</div>
     </footer>
 
-    <!-- Game Modal -->
     <div class="modal" id="game-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal-content">
             <h2 id="modal-title">ゲームを追加</h2>
@@ -816,23 +788,22 @@
             <div class="form-group">
                 <label for="game-image">サムネイル画像URL</label>
                 <input type="url" id="game-image" placeholder="https://...">
-                <small>空欄の場合はタイトルから自動生成されます</small>
             </div>
 
             <div class="modal-actions">
                 <button class="btn-delete" id="btn-delete" style="display: none;">削除</button>
                 <button class="btn-cancel" onclick="App.closeGameModal()">キャンセル</button>
-                <button class="btn-save" onclick="App.saveGame()">保存（全員に反映）</button>
+                <button class="btn-save" onclick="App.saveGame()">保存</button>
             </div>
         </div>
     </div>
 
-    <!-- Settings Modal -->
     <div class="modal" id="settings-modal" role="dialog" aria-modal="true" aria-label="システム設定">
         <div class="modal-content">
             <h2>システム設定</h2>
 
-            <h3>表示設定</h3>
+            <h3>個人設定</h3>
+            <p style="font-size: 12px; color: #888; margin-bottom: 12px;">これらの設定はあなたのブラウザのみに保存され、他の人には影響しません。</p>
             <div class="form-group">
                 <label for="setting-grid-size">カードサイズ</label>
                 <select id="setting-grid-size">
@@ -849,19 +820,9 @@
                     <option value="12h">12時間表記 (03:00 PM)</option>
                 </select>
             </div>
-            <label class="form-group-checkbox">
-                <input type="checkbox" id="setting-show-title">
-                <span>カードの下部にタイトルを表示する</span>
-            </label>
-
-            <h3>外観設定</h3>
             <div class="form-group">
                 <label for="setting-accent-color">アクセントカラー</label>
                 <input type="color" id="setting-accent-color" value="#00e6e6">
-            </div>
-            <div class="form-group">
-                <label for="setting-bg-image">カスタム背景画像URL</label>
-                <input type="url" id="setting-bg-image" placeholder="https://example.com/wallpaper.jpg">
             </div>
             <div style="display: flex; gap: 15px;">
                 <div class="form-group" style="flex: 1;">
@@ -871,7 +832,7 @@
                         <option value="4px">少し丸み (4px)</option>
                         <option value="8px">丸み (8px) - 標準</option>
                         <option value="16px">かなり丸み (16px)</option>
-                        <option value="24px">超丸み (24px)</option>
+                        <option value="24px">すごく丸み (24px)</option>
                     </select>
                 </div>
                 <div class="form-group" style="flex: 1;">
@@ -880,17 +841,15 @@
                         <option value="10px">狭い (10px)</option>
                         <option value="20px">標準 (20px)</option>
                         <option value="32px">広い (32px)</option>
-                        <option value="48px">超広い (48px)</option>
+                        <option value="48px">すごく広い (48px)</option>
                     </select>
                 </div>
             </div>
 
-            <h3>カテゴリ管理</h3>
-            <p style="font-size: 12px; color: #888; margin-bottom: 10px;">不要になったカテゴリを削除します（対象のゲームは「未分類」になります）。</p>
-            <div id="settings-category-list" style="margin-bottom: 20px;">
-                </div>
-
-            <h3>動作設定</h3>
+            <label class="form-group-checkbox">
+                <input type="checkbox" id="setting-show-title">
+                <span>カードの下部にタイトルを表示する</span>
+            </label>
             <label class="form-group-checkbox">
                 <input type="checkbox" id="setting-new-tab">
                 <span>ゲームを新しいタブで開く</span>
@@ -904,20 +863,27 @@
                 <span>ブラウザにローカルバックアップを作成する</span>
             </label>
 
-            <h3>データ管理</h3>
-            <p style="font-size: 12px; color: #888; margin-bottom: 10px;">設定とゲームデータのエクスポート・インポートを行います。</p>
+            <h3 class="global-setting">全体設定</h3>
+            <p style="font-size: 12px; color: #888; margin-bottom: 12px;">変更すると、アクセスしている全員の画面に反映されます。</p>
+            
+            <div class="form-group">
+                <label for="setting-bg-image">カスタム背景画像URL</label>
+                <input type="url" id="setting-bg-image" placeholder="https://example.com/wallpaper.jpg">
+            </div>
+
+            <h3 class="global-setting">カテゴリ管理</h3>
+            <p style="font-size: 12px; color: #888; margin-bottom: 10px;">不要になったカテゴリを削除します（対象のゲームは「未分類」になります）。</p>
+            <div id="settings-category-list" style="margin-bottom: 20px;"></div>
+
+            <h3 class="global-setting">データ管理</h3>
             <div class="settings-btn-group">
                 <button class="btn-outline" onclick="App.exportData()">↓ エクスポート</button>
                 <button class="btn-outline" onclick="document.getElementById('import-file').click()">↑ インポート</button>
                 <input type="file" id="import-file" style="display: none;" accept=".json" onchange="App.importData(event)">
             </div>
-            <div style="margin-top: 15px;">
-                <button class="btn-danger" onclick="App.resetAllData()">全データを初期化</button>
-            </div>
-
             <div class="modal-actions">
-                <button class="btn-cancel" onclick="App.closeSettings()">閉じる</button>
-                <button class="btn-save" onclick="App.saveSettings()">設定を適用（全員に反映）</button>
+                <button class="btn-cancel" onclick="App.closeSettings()">キャンセル</button>
+                <button class="btn-save" onclick="App.saveSettings()">設定を保存</button>
             </div>
         </div>
     </div>
@@ -932,14 +898,17 @@
         'use strict';
 
         // --- Constants & Defaults ---
-        const DEFAULT_CONFIG = {
+        const DEFAULT_SERVER_CONFIG = {
+            bgImage: ''
+        };
+
+        const DEFAULT_LOCAL_CONFIG = {
             gridSize: '240px',
-            showTitle: true,
             clockFormat: '24h',
             accentColor: '#00e6e6',
-            bgImage: '',
             borderRadius: '8px',
             cardGap: '20px',
+            showTitle: true,
             openInNewTab: true,
             enableAnimations: true,
             localBackup: true
@@ -952,7 +921,9 @@
         };
 
         // --- State ---
-        let appConfig = { ...DEFAULT_CONFIG };
+        let serverConfig = { ...DEFAULT_SERVER_CONFIG };
+        let localConfig = JSON.parse(localStorage.getItem('launcher_local_config')) || { ...DEFAULT_LOCAL_CONFIG };
+        
         let games = [];
         let filteredGames = [];
         let dragStartIndex = null;
@@ -964,9 +935,6 @@
 
         // --- Utilities ---
 
-        /**
-         * XSS対策: HTML特殊文字をエスケープ
-         */
         function escapeHtml(str) {
             if (typeof str !== 'string') return '';
             const div = document.createElement('div');
@@ -1049,8 +1017,7 @@
                 });
                 const data = await response.json();
                 if (data.status !== 'success') throw new Error(data.message);
-                if (appConfig.localBackup) localStorage.setItem('games_backup', JSON.stringify(games));
-                showToast('ゲームデータを保存しました', 'success');
+                if (localConfig.localBackup) localStorage.setItem('games_backup', JSON.stringify(games));
                 return true;
             } catch (error) {
                 console.error('Save error:', error);
@@ -1064,11 +1031,11 @@
                 const response = await fetch('./save_config.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(appConfig)
+                    body: JSON.stringify(serverConfig)
                 });
                 const data = await response.json();
                 if (data.status !== 'success') throw new Error(data.message);
-                if (appConfig.localBackup) localStorage.setItem('config_backup', JSON.stringify(appConfig));
+                if (localConfig.localBackup) localStorage.setItem('config_backup', JSON.stringify(serverConfig));
                 showToast('設定を保存しました', 'success');
                 return true;
             } catch (error) {
@@ -1095,7 +1062,6 @@
             const playerContainer = document.getElementById('player-filter');
             let playerHtml = `<div class="player-chip ${currentPlayerFilter === 'all' ? 'active' : ''}" data-players="all" onclick="App.setPlayerFilter('all')">全人数</div>`;
 
-            // 固定のフィルター項目を定義
             const filterOptions = [
                 { id: '1', label: '1人', isMulti: false },
                 { id: '2', label: '2人', isMulti: true },
@@ -1115,7 +1081,6 @@
             const grid = els.grid;
             grid.innerHTML = '';
 
-            // Filter logic
             const searchTerm = els.searchInput.value.toLowerCase().trim();
             filteredGames = games.filter(game => {
                 const matchesSearch = !searchTerm || game.name.toLowerCase().includes(searchTerm);
@@ -1127,16 +1092,14 @@
                     const gameMax = parseInt(game.playersMax, 10) || 0;
                     
                     if (gameMin === 0 && gameMax === 0) {
-                        matchesPlayers = false; // 人数設定がないゲームは除外
+                        matchesPlayers = false; 
                     } else {
                         const gMin = gameMin || 1;
                         const gMax = gameMax || gMin;
                         
                         if (currentPlayerFilter === '5plus') {
-                            // 「5人以上」の判定：最大プレイ人数が5以上であれば表示
                             matchesPlayers = (gMax >= 5);
                         } else {
-                            // 1〜4人の判定：選択した人数が、ゲームの最小〜最大の範囲内に入っているか
                             const target = parseInt(currentPlayerFilter, 10);
                             matchesPlayers = (target >= gMin && target <= gMax);
                         }
@@ -1168,13 +1131,14 @@
                 card.setAttribute('role', 'button');
                 card.setAttribute('aria-label', `${game.name}、Enterで起動`);
 
-                // Events
+                // Events for Drag & Drop
                 card.addEventListener('dragstart', e => handleDragStart(e, index));
                 card.addEventListener('dragover', handleDragOver);
                 card.addEventListener('drop', e => handleDrop(e, index));
                 card.addEventListener('dragenter', handleDragEnter);
                 card.addEventListener('dragleave', handleDragLeave);
                 card.addEventListener('dragend', handleDragEnd);
+                
                 card.addEventListener('keydown', e => handleCardKeydown(e, index));
                 card.addEventListener('focus', () => { focusedCardIndex = index; card.classList.add('focused'); });
                 card.addEventListener('blur', () => card.classList.remove('focused'));
@@ -1184,30 +1148,20 @@
                     launchGame(game);
                 });
 
-                // --- 個人の既読履歴をLocalStorageから取得 ---
+                // --- UPDATE / NEW Badge Logic ---
                 const readHistory = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
                 const lastReadTime = readHistory[game.id] || 0;
 
-                // サーバーのタイムスタンプ（JSのミリ秒とPHPの秒が混在する対策）
                 const createdAtMs = game.createdAt ? (game.createdAt > 9999999999 ? game.createdAt : game.createdAt * 1000) : 0;
                 const remoteUpdatedMs = game.remoteUpdatedAt ? (game.remoteUpdatedAt > 9999999999 ? game.remoteUpdatedAt : game.remoteUpdatedAt * 1000) : 0;
-                
-                // 手動編集時(updatedAt)とクローラー検知時(remoteUpdatedAt)の新しい方を「最終更新日」とする
                 const manualUpdatedMs = game.updatedAt ? (game.updatedAt > 9999999999 ? game.updatedAt : game.updatedAt * 1000) : 0;
                 const latestUpdateMs = Math.max(remoteUpdatedMs, manualUpdatedMs);
 
-                // --- 条件判定 ---
-                // ★追加: 「作成時以降に実際の更新があったか」（作成日と更新日に1秒以上の差があるかで判定）
                 const isActuallyUpdated = (latestUpdateMs - createdAtMs) > 1000;
-
-                // NEW: 作成から7日以内 ＆ まだこのブラウザで開いていない
                 const isNew = createdAtMs && (Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000) && (lastReadTime < createdAtMs);
-                
-                // UPDATE: 実際に更新されており ＆ このブラウザで最後に開いた時刻より後に更新された
-                const isUpdate = isActuallyUpdated && (lastReadTime < latestUpdateMs);
+                const isUpdate = (isActuallyUpdated && (lastReadTime < latestUpdateMs)) || game.hasUpdate;
 
                 let badge = '';
-                // UPDATEバッジを優先して表示
                 if (isUpdate) {
                     badge = '<span class="card-badge" style="background: var(--warning-color); color: #000;">UPDATE</span>';
                 } else if (isNew) {
@@ -1275,21 +1229,25 @@
             renderFilters();
         }
 
+        // === 【自動上位ソートの肝】プレイ時に配列の先頭へ移動 ===
         function launchGame(game) {
             if (!game.url) return;
-            window.open(game.url, appConfig.openInNewTab ? '_blank' : '_self', 'noopener,noreferrer');
+            window.open(game.url, localConfig.openInNewTab ? '_blank' : '_self', 'noopener,noreferrer');
             
-            // 個人の既読時刻をLocalStorageに記録
+            // 個人の既読時刻を記録
             const readHistory = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
             readHistory[game.id] = Date.now();
             localStorage.setItem('gameReadHistory', JSON.stringify(readHistory));
 
-            // サーバー側の最終プレイ時刻も更新（人気順ソートなどに使う用途として残す）
-            game.lastPlayed = Date.now();
-            saveGamesToServer();
-
-            // 画面を再描画して個人のバッジを消す
-            renderGames(); 
+            // 配列の先頭に移動させて全員のソート順を更新する
+            const globalIndex = games.findIndex(g => g.id === game.id);
+            if (globalIndex > -1) {
+                const [playedGame] = games.splice(globalIndex, 1);
+                playedGame.lastPlayed = Date.now();
+                games.unshift(playedGame); // 先頭に追加
+                saveGamesToServer();       // サーバーに順番を保存
+                renderGames();             // 画面を再描画
+            }
         }
 
         function setCategory(cat) {
@@ -1307,9 +1265,9 @@
         // --- Drag & Drop ---
 
         function handleDragStart(e, index) {
-            if (els.searchInput.value.trim() !== '' || currentCategory !== 'all') {
+            if (els.searchInput.value.trim() !== '' || currentCategory !== 'all' || currentPlayerFilter !== 'all') {
                 e.preventDefault();
-                showToast('検索中またはカテゴリフィルタ中は並び替えできません', 'warning');
+                showToast('検索中またはフィルタ中は並び替えできません', 'warning');
                 return;
             }
             dragStartIndex = index;
@@ -1324,7 +1282,7 @@
             e.preventDefault();
             const card = e.currentTarget;
             if (!card.classList.contains('add-card') && !card.classList.contains('dragging')) {
-                card.style.transform = 'scale(1.02)';
+                card.style.transform = `scale(${localConfig.enableAnimations ? '1.02' : '1'})`;
                 card.style.borderColor = 'var(--focus-color)';
             }
         }
@@ -1347,8 +1305,9 @@
 
             const item = games.splice(dragStartIndex, 1)[0];
             games.splice(dropIndex, 0, item);
+            
             renderGames();
-            saveGamesToServer();
+            saveGamesToServer(); // 手動で並び替えた順番をサーバーに保存
             showToast('並び順を変更しました', 'success');
         }
 
@@ -1486,6 +1445,7 @@
             }
         }
 
+        // === 【自動上位ソートの肝】作成・更新時にも先頭へ移動 ===
         function saveGame() {
             const idStr = document.getElementById('game-id').value;
             const name = document.getElementById('game-name').value.trim();
@@ -1511,11 +1471,15 @@
                     if (!image) {
                         image = (games[index].name !== name) ? generatePlaceholderImage(name) : games[index].image;
                     }
-                    games[index] = { 
+                    const updatedGame = { 
                         ...games[index], 
                         id, name, url, image, category, playersMin, playersMax,
                         updatedAt: Date.now()
                     };
+                    
+                    // 編集されたゲームを配列の先頭に移動
+                    games.splice(index, 1);
+                    games.unshift(updatedGame);
                     showToast('ゲームを更新しました', 'success');
                 }
             } else {
@@ -1526,7 +1490,9 @@
                     createdAt: Date.now(),
                     updatedAt: Date.now()
                 };
-                games.push(newGame);
+                
+                // 新規ゲームを配列の先頭に追加
+                games.unshift(newGame);
                 showToast('ゲームを追加しました', 'success');
             }
 
@@ -1558,7 +1524,6 @@
             let html = '';
             categories.forEach(cat => {
                 const label = CATEGORY_LABELS[cat] || cat;
-                // シングルクォーテーションのエスケープ処理
                 const safeCat = escapeHtml(cat).replace(/'/g, "\\'");
                 html += `
                     <div class="category-manage-chip">
@@ -1572,7 +1537,7 @@
 
         function deleteCategory(cat) {
             const label = CATEGORY_LABELS[cat] || cat;
-            if (!confirm(`カテゴリ「${label}」を削除しますか？\n※このカテゴリが設定されているすべてのゲームが「未分類」になります。`)) {
+            if (!confirm(`カテゴリ「${label}」を削除しますか？\n※対象のゲームは「未分類」になります。`)) {
                 return;
             }
 
@@ -1586,31 +1551,37 @@
             });
 
             if (isUpdated) {
-                saveGamesToServer(); // サーバーに保存
-                renderGames();       // メイン画面を更新
+                saveGamesToServer(); 
+                renderGames();       
             }
 
-            // もし削除したカテゴリで絞り込み中だった場合は「すべて」に戻す
             if (currentCategory === cat) {
                 currentCategory = 'all';
                 renderGames();
             }
 
-            renderSettingsCategories(); // 設定画面のリストを再描画
+            renderSettingsCategories(); 
             showToast(`カテゴリ「${label}」を削除しました`, 'success');
         }
 
+        // --- Settings Management (Local & Server) ---
+
         function openSettings() {
-            document.getElementById('setting-grid-size').value = appConfig.gridSize;
-            document.getElementById('setting-show-title').checked = appConfig.showTitle;
-            document.getElementById('setting-clock-format').value = appConfig.clockFormat;
-            document.getElementById('setting-accent-color').value = appConfig.accentColor;
-            document.getElementById('setting-bg-image').value = appConfig.bgImage;
-            document.getElementById('setting-border-radius').value = appConfig.borderRadius;
-            document.getElementById('setting-card-gap').value = appConfig.cardGap;
-            document.getElementById('setting-new-tab').checked = appConfig.openInNewTab;
-            document.getElementById('setting-animations').checked = appConfig.enableAnimations;
-            document.getElementById('setting-local-backup').checked = appConfig.localBackup;
+            // Local Config
+            document.getElementById('setting-grid-size').value = localConfig.gridSize || '240px';
+            document.getElementById('setting-clock-format').value = localConfig.clockFormat || '24h';
+            document.getElementById('setting-accent-color').value = localConfig.accentColor || '#00e6e6';
+            document.getElementById('setting-border-radius').value = localConfig.borderRadius || '8px';
+            document.getElementById('setting-card-gap').value = localConfig.cardGap || '20px';
+            
+            document.getElementById('setting-show-title').checked = localConfig.showTitle ?? true;
+            document.getElementById('setting-new-tab').checked = localConfig.openInNewTab ?? true;
+            document.getElementById('setting-animations').checked = localConfig.enableAnimations ?? true;
+            document.getElementById('setting-local-backup').checked = localConfig.localBackup ?? true;
+
+            // Server Config
+            document.getElementById('setting-bg-image').value = serverConfig.bgImage || '';
+
             renderSettingsCategories();
             els.settingsModal.classList.add('active');
         }
@@ -1620,17 +1591,23 @@
         }
 
         function saveSettings() {
-            appConfig = {
+            // ローカル（個人）設定の保存
+            localConfig = {
                 gridSize: document.getElementById('setting-grid-size').value,
-                showTitle: document.getElementById('setting-show-title').checked,
                 clockFormat: document.getElementById('setting-clock-format').value,
                 accentColor: document.getElementById('setting-accent-color').value,
-                bgImage: document.getElementById('setting-bg-image').value.trim(),
                 borderRadius: document.getElementById('setting-border-radius').value,
                 cardGap: document.getElementById('setting-card-gap').value,
+                showTitle: document.getElementById('setting-show-title').checked,
                 openInNewTab: document.getElementById('setting-new-tab').checked,
                 enableAnimations: document.getElementById('setting-animations').checked,
                 localBackup: document.getElementById('setting-local-backup').checked
+            };
+            localStorage.setItem('launcher_local_config', JSON.stringify(localConfig));
+
+            // サーバー（全体）設定の保存
+            serverConfig = {
+                bgImage: document.getElementById('setting-bg-image').value.trim()
             };
 
             saveConfigToServer();
@@ -1640,22 +1617,26 @@
 
         function applyConfig() {
             const root = document.documentElement;
-            root.style.setProperty('--grid-min-width', appConfig.gridSize);
-            root.style.setProperty('--focus-color', appConfig.accentColor);
-            root.style.setProperty('--focus-color-rgb', hexToRgb(appConfig.accentColor));
-            root.style.setProperty('--card-radius', appConfig.borderRadius);
-            root.style.setProperty('--grid-gap', appConfig.cardGap);
-            root.style.setProperty('--hover-scale', appConfig.enableAnimations ? '1.04' : '1.0');
 
-            document.body.style.backgroundImage = appConfig.bgImage ? `url('${appConfig.bgImage}')` : 'none';
-            document.body.classList.toggle('hide-titles', !appConfig.showTitle);
+            // Apply Local Config
+            root.style.setProperty('--grid-min-width', localConfig.gridSize);
+            root.style.setProperty('--focus-color', localConfig.accentColor);
+            root.style.setProperty('--focus-color-rgb', hexToRgb(localConfig.accentColor));
+            root.style.setProperty('--card-radius', localConfig.borderRadius);
+            root.style.setProperty('--grid-gap', localConfig.cardGap);
+            root.style.setProperty('--hover-scale', localConfig.enableAnimations ? '1.04' : '1.0');
+            document.body.classList.toggle('hide-titles', !localConfig.showTitle);
+            
+            // Apply Server Config
+            document.body.style.backgroundImage = serverConfig.bgImage ? `url('${serverConfig.bgImage}')` : 'none';
+            
             updateClock();
         }
 
         // --- Data Management ---
 
         function exportData() {
-            const exportObject = { games, config: appConfig, exportedAt: new Date().toISOString() };
+            const exportObject = { games, serverConfig, localConfig, exportedAt: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(exportObject, null, 2)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
@@ -1681,18 +1662,26 @@
                     if (Array.isArray(imported)) {
                         games = imported.map(g => ({ ...g, createdAt: g.createdAt || Date.now() }));
                     } else if (imported && typeof imported === 'object') {
-                        if (Array.isArray(imported.games)) {
-                            games = imported.games;
-                        }
-                        if (imported.config && typeof imported.config === 'object') {
-                            appConfig = { ...DEFAULT_CONFIG, ...imported.config };
-                            applyConfig();
+                        if (Array.isArray(imported.games)) games = imported.games;
+                        
+                        if (imported.serverConfig) {
+                            serverConfig = { ...DEFAULT_SERVER_CONFIG, ...imported.serverConfig };
                             saveConfigToServer();
+                        } else if (imported.config) {
+                            // 旧フォーマットのインポート対応
+                            serverConfig = { ...DEFAULT_SERVER_CONFIG, ...imported.config };
+                            saveConfigToServer();
+                        }
+                        
+                        if (imported.localConfig) {
+                            localConfig = { ...DEFAULT_LOCAL_CONFIG, ...imported.localConfig };
+                            localStorage.setItem('launcher_local_config', JSON.stringify(localConfig));
                         }
                     } else {
                         throw new Error("Invalid format");
                     }
 
+                    applyConfig();
                     renderGames();
                     saveGamesToServer();
                     closeSettings();
@@ -1706,23 +1695,13 @@
             reader.readAsText(file);
         }
 
-        function resetAllData() {
-            if (confirm("【警告】すべてのゲームデータが削除されます。この操作は取り消せません。\n本当に初期化しますか？")) {
-                games = [];
-                renderGames();
-                saveGamesToServer();
-                closeSettings();
-                showToast('全データを初期化しました', 'warning');
-            }
-        }
-
         function updateClock() {
             const now = new Date();
             let hours = now.getHours();
             const minutes = String(now.getMinutes()).padStart(2, '0');
             let period = '';
 
-            if (appConfig.clockFormat === '12h') {
+            if (localConfig.clockFormat === '12h') {
                 period = hours >= 12 ? ' PM' : ' AM';
                 hours = hours % 12 || 12;
             }
@@ -1732,29 +1711,27 @@
         // --- Initialization ---
 
         async function init() {
-            // Cache DOM elements
             els.grid = document.getElementById('game-grid');
             els.gameModal = document.getElementById('game-modal');
             els.settingsModal = document.getElementById('settings-modal');
             els.searchInput = document.getElementById('search-input');
             els.clock = document.getElementById('clock');
 
-            // Load config
+            // Load Global Config
             try {
                 const res = await fetch('./config.json?t=' + Date.now());
                 if (res.ok) {
-                    const serverConfig = await res.json();
-                    appConfig = { ...DEFAULT_CONFIG, ...serverConfig };
+                    const loadedConfig = await res.json();
+                    serverConfig = { ...DEFAULT_SERVER_CONFIG, ...loadedConfig };
                 }
             } catch (e) {
                 console.warn('Config load failed, using defaults');
-                // Try local backup
-                const localConfig = localStorage.getItem('config_backup');
-                if (localConfig) appConfig = { ...DEFAULT_CONFIG, ...JSON.parse(localConfig) };
+                const localBackup = localStorage.getItem('config_backup');
+                if (localBackup) serverConfig = { ...DEFAULT_SERVER_CONFIG, ...JSON.parse(localBackup) };
             }
             applyConfig();
 
-            // Load games
+            // Load Games
             try {
                 const res = await fetch('./games.json?t=' + Date.now());
                 if (res.ok) {
@@ -1779,14 +1756,6 @@
                 if (e.target === els.gameModal) closeGameModal();
                 if (e.target === els.settingsModal) closeSettings();
             });
-
-            // Modal close on Escape
-            document.addEventListener('keydown', e => {
-                if (e.key === 'Escape') {
-                    if (els.gameModal.classList.contains('active')) closeGameModal();
-                    if (els.settingsModal.classList.contains('active')) closeSettings();
-                }
-            });
         }
 
         function handleCategoryChange(select) {
@@ -1800,27 +1769,14 @@
             }
         }
 
-        // Public API
         return {
             init,
-            openGameModal,
-            closeGameModal,
-            saveGame,
-            deleteGame,
-            deleteCategory,
-            openSettings,
-            closeSettings,
-            saveSettings,
-            exportData,
-            importData,
-            resetAllData,
-            setCategory,
-            setPlayerFilter,
-            handleCategoryChange
+            openGameModal, closeGameModal, saveGame, deleteGame, deleteCategory,
+            openSettings, closeSettings, saveSettings, exportData, importData,
+            setCategory, setPlayerFilter, handleCategoryChange
         };
     })();
 
-    // Start app
     document.addEventListener('DOMContentLoaded', App.init);
     </script>
 </body>
