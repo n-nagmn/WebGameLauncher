@@ -114,7 +114,7 @@ foreach ($decoded as $index => $game) {
         'id' => is_int($game['id']) ? $game['id'] : intval($game['id']),
         'name' => htmlspecialchars(mb_substr(trim($game['name']), 0, 100), ENT_QUOTES, 'UTF-8'),
         'url' => filter_var(trim($game['url']), FILTER_VALIDATE_URL) ?: '',
-        'image' => isset($game['image']) ? htmlspecialchars(trim($game['image']), ENT_QUOTES, 'UTF-8') : '',
+        'image' => isset($game['image']) ? htmlspecialchars(trim($game['image']), ENT_QUOTES, 'UTF-8') : '',    
         'category' => isset($game['category']) ? htmlspecialchars(mb_substr(trim($game['category']), 0, 50), ENT_QUOTES, 'UTF-8') : '',
         'playersMin' => isset($game['playersMin']) ? max(1, intval($game['playersMin'])) : 0,
         'playersMax' => isset($game['playersMax']) ? max(1, intval($game['playersMax'])) : 0,
@@ -123,7 +123,8 @@ foreach ($decoded as $index => $game) {
         'lastPlayed' => isset($game['lastPlayed']) ? intval($game['lastPlayed']) : 0,
         'hasUpdate' => isset($game['hasUpdate']) ? filter_var($game['hasUpdate'], FILTER_VALIDATE_BOOLEAN) : false,
         'remoteUpdatedAt' => isset($game['remoteUpdatedAt']) ? intval($game['remoteUpdatedAt']) : 0,
-        'lastHash' => isset($game['lastHash']) ? htmlspecialchars(trim($game['lastHash']), ENT_QUOTES, 'UTF-8') : ''
+        'lastHash' => isset($game['lastHash']) ? htmlspecialchars(trim($game['lastHash']), ENT_QUOTES, 'UTF-8') : '',
+        'isPinned' => isset($game['isPinned']) ? filter_var($game['isPinned'], FILTER_VALIDATE_BOOLEAN) : false
     ];
 }
 
@@ -176,7 +177,7 @@ if ($result !== false) {
     $response["status"] = "success";
     $response["message"] = "保存成功！";
     $response["count"] = count($validated);
-    $response["backup"] = $backup_success ? ($backup_name ? basename($backup_name) : 'created') : 'skipped';
+    $response["backup"] = $backup_success ? ($backup_name ? basename($backup_name) : 'created') : 'skipped';    
     http_response_code(200);
 } else {
     $response["message"] = "games.json への書き込みに失敗しました。パーミッションを確認してください（chmod 666 games.json）";

@@ -88,7 +88,8 @@ if (!is_array($decoded)) {
 // Schema validation
 $allowed_keys = [
     'gridSize', 'showTitle', 'clockFormat', 'accentColor', 'bgImage',
-    'borderRadius', 'cardGap', 'openInNewTab', 'enableAnimations', 'localBackup'
+    'borderRadius', 'cardGap', 'openInNewTab', 'enableAnimations', 'localBackup',
+    'categoryOrder'
 ];
 
 $validated = [];
@@ -104,7 +105,7 @@ foreach ($decoded as $key => $value) {
             break;
         case 'accentColor':
             $color = ltrim(trim($value), '#');
-            $validated[$key] = preg_match('/^[0-9A-Fa-f]{6}$/', $color) ? '#' . strtolower($color) : '#00e6e6';
+            $validated[$key] = preg_match('/^[0-9A-Fa-f]{6}$/', $color) ? '#' . strtolower($color) : '#00e6e6'; 
             break;
         case 'bgImage':
             $url = trim($value);
@@ -117,6 +118,13 @@ foreach ($decoded as $key => $value) {
             break;
         case 'clockFormat':
             $validated[$key] = in_array($value, ['12h', '24h'], true) ? $value : '24h';
+            break;
+        case 'categoryOrder':
+            if (is_array($value)) {
+                $validated[$key] = array_map(function($v) {
+                    return htmlspecialchars(mb_substr(trim($v), 0, 50), ENT_QUOTES, 'UTF-8');
+                }, $value);
+            }
             break;
         default:
             $validated[$key] = is_string($value) ? htmlspecialchars(trim($value), ENT_QUOTES, 'UTF-8') : $value;

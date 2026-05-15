@@ -1,1 +1,13 @@
-{"gridSize":"320px","showTitle":true,"clockFormat":"24h","accentColor":"#00e6e6","bgImage":"https://www.elst.okayama-u.ac.jp/up_load_files/areas/areas01_comp/WATANABE%20Minoru.jpg","borderRadius":"12px","cardGap":"35px","openInNewTab":true,"enableAnimations":true}
+{
+    "bgImage": "",
+    "categoryOrder": [
+        "action",
+        "puzzle",
+        "casual",
+        "strategy",
+        "shooter",
+        "ジェネレータ",
+        "ツール",
+        "レース"
+    ]
+}

@@ -19,6 +19,7 @@
             --danger-color: #ff5252;
             --success-color: #69f0ae;
             --warning-color: #ffd740;
+            --pin-color: #ffeb3b;
 
             --grid-min-width: 240px;
             --grid-gap: 20px;
@@ -117,6 +118,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -0.5px;
+            flex-shrink: 0;
         }
 
         .category-filter {
@@ -125,8 +127,9 @@
             overflow-x: auto;
             scrollbar-width: none;
             max-width: 100%;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             min-width: 0;
+            padding: 4px 0;
         }
         .category-filter::-webkit-scrollbar { display: none; }
 
@@ -139,7 +142,7 @@
             border-left: 1px solid rgba(255,255,255,0.1);
             padding-left: 16px;
             margin-left: 8px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             min-width: 0;
         }
         .player-filter::-webkit-scrollbar { display: none; }
@@ -188,6 +191,10 @@
             color: #000;
             border-color: var(--focus-color);
             font-weight: 700;
+        }
+        .category-chip.dragging {
+            opacity: 0.5;
+            border: 2px dashed var(--focus-color);
         }
 
         .header-right {
@@ -293,6 +300,10 @@
             box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(var(--focus-color-rgb), 0.3);
         }
 
+        .game-card.pinned {
+            /* border-color: rgba(var(--focus-color-rgb), 0.5); */
+        }
+
         .game-card.focused { border-width: 3px; }
 
         .game-card img {
@@ -348,8 +359,10 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             backdrop-filter: blur(4px);
+            z-index: 15;
         }
         .card-badge.new { background: var(--focus-color); color: #000; }
+        .card-badge.pinned-badge { background: var(--pin-color); color: #000; }
 
         .title-bar {
             background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.6));
@@ -394,10 +407,9 @@
             transform: scale(var(--hover-scale, 1.02));
         }
 
-        .edit-btn {
+        .edit-btn, .pin-btn {
             position: absolute;
             top: 8px;
-            right: 8px;
             background: rgba(0,0,0,0.6);
             color: white;
             border: 1px solid rgba(255,255,255,0.15);
@@ -414,13 +426,26 @@
             z-index: 20;
             backdrop-filter: blur(4px);
         }
+        .edit-btn { right: 8px; }
+        .pin-btn { right: 48px; }
+        
         .game-card:hover .edit-btn,
-        .game-card.focused .edit-btn { opacity: 1; }
+        .game-card.focused .edit-btn,
+        .game-card:hover .pin-btn,
+        .game-card.focused .pin-btn { opacity: 1; }
+        
         .edit-btn:hover {
             background: var(--focus-color);
             color: #000;
             border-color: var(--focus-color);
             transform: scale(1.1);
+        }
+        .pin-btn:hover, .pin-btn.active {
+            background: var(--pin-color);
+            color: #000;
+            border-color: var(--pin-color);
+            transform: scale(1.1);
+            opacity: 1;
         }
 
         /* Drag & Drop */
@@ -697,7 +722,7 @@
         @media (max-width: 768px) {
             header { padding: 0 20px; }
             main { padding: 16px 20px; }
-            .header-left .category-filter { display: none; }
+            /* .header-left .category-filter { display: none; } */
             .search-container input { width: 100px; }
             .search-container input:focus { width: 150px; }
             footer { padding: 0 20px; font-size: 11px; }
@@ -732,7 +757,7 @@
     <footer>
         <div class="footer-left">
             <div class="footer-btn"><span class="key-icon">Enter</span> 起動</div>
-            <div class="footer-btn"><span class="key-icon">↑↓←→</span> 移動</div>
+            <div class="footer-btn"><span class="key-icon">←↑→↓</span> 移動</div>
             <div class="footer-btn"><span class="key-icon">Drag</span> 並び替え</div>
         </div>
         <div class="footer-btn"><span class="key-icon">Del</span> 削除</div>
@@ -749,7 +774,7 @@
             </div>
             <div style="display: flex; gap: 15px;">
                 <div class="form-group" style="flex: 1;">
-                    <label for="game-category">カテゴリ</label>
+                    <label for="game-category">カテゴリー</label>
                     <select id="game-category" onchange="App.handleCategoryChange(this)">
                         <option value="">未分類</option>
                         <option value="action">アクション</option>
@@ -760,9 +785,9 @@
                         <option value="strategy">ストラテジー</option>
                         <option value="casual">カジュアル</option>
                         <option value="retro">レトロ</option>
-                        <option value="__new__">＋ 新規カテゴリ...</option>
+                        <option value="__new__">＋ 新規カテゴリー...</option>
                     </select>
-                    <input type="text" id="game-category-new" placeholder="新規カテゴリ名" style="display:none; margin-top:8px; width:100%; padding:10px 14px; border:1px solid rgba(255,255,255,0.1); border-radius:6px; background:rgba(0,0,0,0.3); color:white; outline:none; font-size:14px;">
+                    <input type="text" id="game-category-new" placeholder="新規カテゴリー名" style="display:none; margin-top:8px; width:100%; padding:10px 14px; border:1px solid rgba(255,255,255,0.1); border-radius:6px; background:rgba(0,0,0,0.3); color:white; outline:none; font-size:14px;">
                 </div>
                 <div class="form-group" style="flex: 1;">
                     <label>プレイ人数</label>
@@ -785,7 +810,7 @@
                             <option value="64">64</option>
                             <option value="100">100</option>
                         </select>
-                        <span style="color: #888; font-size: 13px;">～</span>
+                        <span style="color: #888; font-size: 13px;">〜</span>
                         <select id="game-players-max" style="flex: 1;">
                             <option value="">?</option>
                             <option value="1">1</option>
@@ -831,7 +856,7 @@
             <h2>システム設定</h2>
 
             <h3>個人設定</h3>
-            <p style="font-size: 12px; color: #888; margin-bottom: 12px;">これらの設定はあなたのブラウザのみに保存され、他の人には影響しません。</p>
+            <p style="font-size: 12px; color: #888; margin-bottom: 12px;">これらの設定はあなたのブラウザのみに保存され、他の人に影響しません。</p>
             <div class="setting-group">
                 <div class="form-group">
                     <label for="setting-grid-size">カードサイズ</label>
@@ -845,8 +870,8 @@
                 <div class="form-group">
                     <label for="setting-clock-format">時計のフォーマット</label>
                     <select id="setting-clock-format">
-                        <option value="24h">24時間表記 (15:00)</option>
-                        <option value="12h">12時間表記 (03:00 PM)</option>
+                        <option value="24h">24時間表示 (15:00)</option>
+                        <option value="12h">12時間表示 (03:00 PM)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -865,7 +890,7 @@
                         </select>
                     </div>
                     <div class="form-group" style="flex: 1;">
-                        <label for="setting-card-gap">カードの間隔</label>
+                        <label for="setting-カードの隙間">カードの隙間</label>
                         <select id="setting-card-gap">
                             <option value="10px">狭い (10px)</option>
                             <option value="20px">標準 (20px)</option>
@@ -903,8 +928,8 @@
                 </div>
 
                 <div class="sub-section">
-                    <h4>カテゴリ管理</h4>
-                    <p>不要になったカテゴリを削除します（対象のゲームは「未分類」になります）。</p>
+                    <h4>カテゴリー管理</h4>
+                    <p>不要になったカテゴリーを削除します（対象のゲームは「未分類」になります）。</p>
                     <div id="settings-category-list"></div>
                 </div>
 
@@ -912,8 +937,8 @@
                     <h4>データ管理</h4>
                     <p>ゲームデータの書き出し・読み込みを行います。</p>
                     <div class="settings-btn-group">
-                        <button class="btn-outline" onclick="App.exportData()">↓ エクスポート</button>
-                        <button class="btn-outline" onclick="document.getElementById('import-file').click()">↑ インポート</button>
+                        <button class="btn-outline" onclick="App.exportData()">↑ エクスポート</button>
+                        <button class="btn-outline" onclick="document.getElementById('import-file').click()">↓ インポート</button>
                         <input type="file" id="import-file" style="display: none;" accept=".json" onchange="App.importData(event)">
                     </div>
                 </div>
@@ -937,7 +962,8 @@
 
         // --- Constants & Defaults ---
         const DEFAULT_SERVER_CONFIG = {
-            bgImage: ''
+            bgImage: '',
+            categoryOrder: []
         };
 
         const DEFAULT_LOCAL_CONFIG = {
@@ -965,6 +991,7 @@
         let games = [];
         let filteredGames = [];
         let dragStartIndex = null;
+        let categoryDragStartIndex = null;
         let focusedCardIndex = -1;
         let currentCategory = 'all';
 
@@ -1088,11 +1115,36 @@
         function renderFilters() {
             // Category filter
             const catContainer = document.getElementById('category-filter');
-            const categories = new Set(games.map(g => g.category).filter(Boolean));
+            const availableCategories = Array.from(new Set(games.map(g => g.category).filter(Boolean)));
+            
+            // サーバーから取得した順序に基づいて並び替え
+            const sortedCategories = [...availableCategories].sort((a, b) => {
+                const orderA = serverConfig.categoryOrder ? serverConfig.categoryOrder.indexOf(a) : -1;
+                const orderB = serverConfig.categoryOrder ? serverConfig.categoryOrder.indexOf(b) : -1;
+                
+                if (orderA === -1 && orderB === -1) return a.localeCompare(b);
+                if (orderA === -1) return 1;
+                if (orderB === -1) return -1;
+                return orderA - orderB;
+            });
+
             let catHtml = `<div class="category-chip ${currentCategory === 'all' ? 'active' : ''}" data-cat="all" onclick="App.setCategory('all')">すべて</div>`;
-            categories.forEach(cat => {
+            
+            sortedCategories.forEach((cat, idx) => {
                 const label = CATEGORY_LABELS[cat] || cat;
-                catHtml += `<div class="category-chip ${currentCategory === cat ? 'active' : ''}" data-cat="${escapeHtml(cat)}" onclick="App.setCategory('${escapeHtml(cat)}')">${escapeHtml(label)}</div>`;
+                const isActive = currentCategory === cat;
+                catHtml += `
+                    <div class="category-chip ${isActive ? 'active' : ''}" 
+                         data-cat="${escapeHtml(cat)}" 
+                         draggable="true"
+                         oncontextmenu="return false;"
+                         onclick="App.setCategory('${escapeHtml(cat)}')"
+                         ondragstart="App.handleCategoryDragStart(event, ${idx})"
+                         ondragover="App.handleCategoryDragOver(event)"
+                         ondrop="App.handleCategoryDrop(event, ${idx})"
+                         ondragend="App.handleCategoryDragEnd(event)">
+                        ${escapeHtml(label)}
+                    </div>`;
             });
             catContainer.innerHTML = catHtml;
 
@@ -1120,6 +1172,8 @@
             grid.innerHTML = '';
 
             const searchTerm = els.searchInput.value.toLowerCase().trim();
+            
+            // 並び替えは行わず、配列の順序を尊重する
             filteredGames = games.filter(game => {
                 const matchesSearch = !searchTerm || game.name.toLowerCase().includes(searchTerm);
                 const matchesCategory = currentCategory === 'all' || game.category === currentCategory;
@@ -1161,7 +1215,7 @@
 
             filteredGames.forEach((game, index) => {
                 const card = document.createElement('div');
-                card.className = 'game-card';
+                card.className = 'game-card' + (game.isPinned ? ' pinned' : '');
                 card.dataset.index = index;
                 card.dataset.id = game.id;
                 card.draggable = true;
@@ -1182,11 +1236,11 @@
                 card.addEventListener('blur', () => card.classList.remove('focused'));
 
                 card.addEventListener('click', e => {
-                    if (e.target.closest('.edit-btn')) return;
+                    if (e.target.closest('.edit-btn') || e.target.closest('.pin-btn')) return;
                     launchGame(game);
                 });
 
-                // --- UPDATE / NEW Badge Logic ---
+                // --- UPDATE / NEW / PINNED Badge Logic ---
                 const readHistory = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
                 const lastReadTime = readHistory[game.id] || 0;
 
@@ -1220,15 +1274,15 @@
                     let label = '';
                     if (min && max) {
                         if (min === max) {
-                            label = min >= 999 ? '∞' : min + '人';
+                            label = min >= 999 ? '♾️' : min + '人';
                         } else {
-                            const maxLabel = max >= 999 ? '∞' : max;
-                            label = min + '～' + maxLabel + '人';
+                            const maxLabel = max >= 999 ? '♾️' : max;
+                            label = min + '〜' + maxLabel + '人';
                         }
                     } else if (min) {
-                        label = min >= 999 ? '∞' : min + '人～';
+                        label = min >= 999 ? '♾️' : min + '人〜';
                     } else if (max) {
-                        label = max >= 999 ? '～∞' : '～' + max + '人';
+                        label = max >= 999 ? '〜♾️' : '〜' + max + '人';
                     }
 
                     playerBadge = `<span class="player-badge ${isMulti ? 'multi' : ''}">${label}</span>`;
@@ -1237,7 +1291,8 @@
                 card.innerHTML = `
                     ${badge}
                     ${playerBadge}
-                    <button class="edit-btn" title="編集" onclick="App.openGameModal(${game.id}, event)" aria-label="${escapeHtml(game.name)}を編集">⚙️</button>
+                    <button class="pin-btn" title="${game.isPinned ? '固定を解除' : '位置を固定'}" onclick="App.togglePin(${game.id}, event)">${game.isPinned ? '✖️' : '📌'}</button>
+                    <button class="edit-btn" title="編集" onclick="App.openGameModal(${game.id}, event)" aria-label="${escapeHtml(game.name)}を編集">✎</button>
                     <img src="${escapeHtml(imgUrl)}" alt="" loading="lazy" onerror="this.src='${generatePlaceholderImage(game.name)}'" onload="this.classList.add('loaded')">
                     <div class="title-bar" title="${escapeHtml(game.name)}">${escapeHtml(game.name)}</div>
                     ${catHtml}
@@ -1251,8 +1306,8 @@
             addCard.id = 'add-card-btn';
             addCard.innerHTML = `
                 <div style="width: 100%; aspect-ratio: 16 / 9; flex-grow: 1;"></div>
-                <div class="title-bar" style="visibility: hidden;">＋</div>
-                <div class="card-category" style="visibility: hidden;">＋</div>
+                <div class="title-bar" style="visibility: hidden;">..</div>
+                <div class="card-category" style="visibility: hidden;">..</div>
                 <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; font-size: 48px;">＋</div>
             `;
             addCard.title = "新しいゲームを追加 (N)";
@@ -1267,7 +1322,58 @@
             renderFilters();
         }
 
-        // === 【自動上位ソートの肝】プレイ時に配列の先頭へ移動 ===
+        // --- Pin Function ---
+        function togglePin(id, event) {
+            if (event) event.stopPropagation();
+            const index = games.findIndex(g => g.id === id);
+            if (index !== -1) {
+                games[index].isPinned = !games[index].isPinned;
+                showToast(games[index].isPinned ? 'ピン留めしました' : 'ピン留めを解除しました', 'success');
+                renderGames();
+                saveGamesToServer();
+            }
+        }
+
+        // --- Category Drag & Drop ---
+        function handleCategoryDragStart(e, index) {
+            categoryDragStartIndex = index;
+            e.currentTarget.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleCategoryDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleCategoryDrop(e, dropIndex) {
+            e.preventDefault();
+            if (categoryDragStartIndex === null || categoryDragStartIndex === dropIndex) return;
+
+            const availableCategories = Array.from(new Set(games.map(g => g.category).filter(Boolean)));
+            const sortedCategories = [...availableCategories].sort((a, b) => {
+                const orderA = serverConfig.categoryOrder ? serverConfig.categoryOrder.indexOf(a) : -1;
+                const orderB = serverConfig.categoryOrder ? serverConfig.categoryOrder.indexOf(b) : -1;
+                if (orderA === -1 && orderB === -1) return a.localeCompare(b);
+                if (orderA === -1) return 1;
+                if (orderB === -1) return -1;
+                return orderA - orderB;
+            });
+
+            const [movedItem] = sortedCategories.splice(categoryDragStartIndex, 1);
+            sortedCategories.splice(dropIndex, 0, movedItem);
+
+            serverConfig.categoryOrder = sortedCategories;
+            saveConfigToServer();
+            renderFilters();
+            showToast('カテゴリーの順序を更新しました', 'success');
+        }
+
+        function handleCategoryDragEnd(e) {
+            e.currentTarget.classList.remove('dragging');
+            categoryDragStartIndex = null;
+        }
+
+        // === プレイ時に順番を入れ替える（ピン留め以外） ===
         function launchGame(game) {
             if (!game.url) return;
             window.open(game.url, localConfig.openInNewTab ? '_blank' : '_self', 'noopener,noreferrer');
@@ -1277,15 +1383,23 @@
             readHistory[game.id] = Date.now();
             localStorage.setItem('gameReadHistory', JSON.stringify(readHistory));
 
-            // 配列の先頭に移動させて全員のソート順を更新する
-            const globalIndex = games.findIndex(g => g.id === game.id);
-            if (globalIndex > -1) {
-                const [playedGame] = games.splice(globalIndex, 1);
-                playedGame.lastPlayed = Date.now();
-                playedGame.hasUpdate = false;
-                games.unshift(playedGame); // 先頭に追加
-                saveGamesToServer();       // サーバーに順番を保存
-                renderGames();             // 画面を再描画
+            // ピン留めされていない場合のみ、先頭（ピン留めの下）に移動
+            if (!game.isPinned) {
+                const globalIndex = games.findIndex(g => g.id === game.id);
+                if (globalIndex > -1) {
+                    const [playedGame] = games.splice(globalIndex, 1);
+                    playedGame.lastPlayed = Date.now();
+                    playedGame.hasUpdate = false;
+                    games.unshift(playedGame); 
+                    saveGamesToServer();       
+                    renderGames();             
+                }
+            } else {
+                // ピン留めされている場合は時刻だけ更新
+                game.lastPlayed = Date.now();
+                game.hasUpdate = false;
+                saveGamesToServer();
+                renderGames();
             }
         }
 
@@ -1301,7 +1415,7 @@
             renderGames();
         }
 
-        // --- Drag & Drop ---
+        // --- Drag & Drop (Games) ---
 
         function handleDragStart(e, index) {
             if (els.searchInput.value.trim() !== '' || currentCategory !== 'all' || currentPlayerFilter !== 'all') {
@@ -1342,11 +1456,18 @@
 
             if (dragStartIndex === null || dragStartIndex === dropIndex) return;
 
-            const item = games.splice(dragStartIndex, 1)[0];
-            games.splice(dropIndex, 0, item);
+            // フィルター適用後のリストを元に、元の games 配列を操作
+            const movedId = filteredGames[dragStartIndex].id;
+            const targetId = filteredGames[dropIndex].id;
+            
+            const fromIndex = games.findIndex(g => g.id === movedId);
+            const toIndex = games.findIndex(g => g.id === targetId);
+
+            const [item] = games.splice(fromIndex, 1);
+            games.splice(toIndex, 0, item);
             
             renderGames();
-            saveGamesToServer(); // 手動で並び替えた順番をサーバーに保存
+            saveGamesToServer(); 
             showToast('並び順を変更しました', 'success');
         }
 
@@ -1450,7 +1571,7 @@
                 }
             });
             
-            optionsHtml += `<option value="__new__">＋ 新規カテゴリ...</option>`;
+            optionsHtml += `<option value="__new__">＋ 新規カテゴリー...</option>`;
             
             categoryInput.innerHTML = optionsHtml;
 
@@ -1503,7 +1624,6 @@
             }
         }
 
-        // === 【自動上位ソートの肝】作成・更新時にも先頭へ移動 ===
         function saveGame() {
             const idStr = document.getElementById('game-id').value;
             const name = document.getElementById('game-name').value.trim();
@@ -1535,9 +1655,8 @@
                         updatedAt: Date.now()
                     };
                     
-                    // 編集されたゲームを配列の先頭に移動
-                    games.splice(index, 1);
-                    games.unshift(updatedGame);
+                    // 編集された場合は位置を維持
+                    games[index] = updatedGame;
                     showToast('ゲームを更新しました', 'success');
                 }
             } else {
@@ -1546,10 +1665,11 @@
                     id: games.length > 0 ? Math.max(...games.map(g => g.id)) + 1 : 1,
                     name, url, image, category, playersMin, playersMax,
                     createdAt: Date.now(),
-                    updatedAt: Date.now()
+                    updatedAt: Date.now(),
+                    isPinned: false
                 };
                 
-                // 新規ゲームを配列の先頭に追加
+                // 新規ゲームを先頭に追加
                 games.unshift(newGame);
                 showToast('ゲームを追加しました', 'success');
             }
@@ -1575,7 +1695,7 @@
             const categories = new Set(games.map(g => g.category).filter(Boolean));
 
             if (categories.size === 0) {
-                container.innerHTML = '<span style="color:#666; font-size:12px;">現在使用されているカテゴリはありません。</span>';
+                container.innerHTML = '<span style="color:#666; font-size:12px;">現在使用されているカテゴリーはありません。</span>';
                 return;
             }
 
@@ -1595,7 +1715,7 @@
 
         function deleteCategory(cat) {
             const label = CATEGORY_LABELS[cat] || cat;
-            if (!confirm(`カテゴリ「${label}」を削除しますか？\n※対象のゲームは「未分類」になります。`)) {
+            if (!confirm(`カテゴリー「${label}」を削除しますか？\n※対象のゲームは「未分類」になります。`)) {
                 return;
             }
 
@@ -1619,7 +1739,7 @@
             }
 
             renderSettingsCategories(); 
-            showToast(`カテゴリ「${label}」を削除しました`, 'success');
+            showToast(`カテゴリー「${label}」を削除しました`, 'success');
         }
 
         // --- Settings Management (Local & Server) ---
@@ -1665,6 +1785,7 @@
 
             // サーバー（全体）設定の保存
             serverConfig = {
+                ...serverConfig,
                 bgImage: document.getElementById('setting-bg-image').value.trim()
             };
 
@@ -1687,8 +1808,6 @@
             
             // Apply Server Config
             document.body.style.backgroundImage = serverConfig.bgImage ? `url('${serverConfig.bgImage}')` : 'none';
-            
-            updateClock();
         }
 
         // --- Data Management ---
@@ -1715,7 +1834,7 @@
             reader.onload = function(e) {
                 try {
                     const imported = JSON.parse(e.target.result);
-                    if (!confirm("既存のデータと設定は上書きされます。続行しますか？")) return;
+                    if (!confirm("既存のデータと設定が上書きされます。続行しますか？")) return;
 
                     if (Array.isArray(imported)) {
                         games = imported.map(g => ({ ...g, createdAt: g.createdAt || Date.now() }));
@@ -1726,7 +1845,6 @@
                             serverConfig = { ...DEFAULT_SERVER_CONFIG, ...imported.serverConfig };
                             saveConfigToServer();
                         } else if (imported.config) {
-                            // 旧フォーマットのインポート対応
                             serverConfig = { ...DEFAULT_SERVER_CONFIG, ...imported.config };
                             saveConfigToServer();
                         }
@@ -1754,18 +1872,7 @@
         }
 
         function updateClock() {
-            if (!els.clock) return;
-            
-            const now = new Date();
-            let hours = now.getHours();
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            let period = '';
-
-            if (localConfig.clockFormat === '12h') {
-                period = hours >= 12 ? ' PM' : ' AM';
-                hours = hours % 12 || 12;
-            }
-            els.clock.textContent = `${String(hours).padStart(2, '0')}:${minutes}${period}`;
+            // 時計機能は削除されているが、互換性のために残す
         }
 
         // --- Initialization ---
@@ -1775,7 +1882,6 @@
             els.gameModal = document.getElementById('game-modal');
             els.settingsModal = document.getElementById('settings-modal');
             els.searchInput = document.getElementById('search-input');
-            els.clock = document.getElementById('clock');
 
             // Load Global Config
             try {
@@ -1807,8 +1913,6 @@
             }
 
             renderGames();
-            setInterval(updateClock, 1000 * 60);
-            updateClock();
 
             els.searchInput.addEventListener('input', renderGames);
 
@@ -1833,7 +1937,8 @@
             init,
             openGameModal, closeGameModal, saveGame, deleteGame, deleteCategory,
             openSettings, closeSettings, saveSettings, exportData, importData,
-            setCategory, setPlayerFilter, handleCategoryChange
+            setCategory, setPlayerFilter, handleCategoryChange, togglePin,
+            handleCategoryDragStart, handleCategoryDragOver, handleCategoryDrop, handleCategoryDragEnd
         };
     })();
 
