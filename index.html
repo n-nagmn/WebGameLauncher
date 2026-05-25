@@ -994,6 +994,8 @@
         let categoryDragStartIndex = null;
         let focusedCardIndex = -1;
         let currentCategory = 'all';
+        let serverTimestamps = null;
+        let isSaving = false;
 
         // --- DOM Elements ---
         const els = {};
@@ -1074,6 +1076,7 @@
         // --- Server Communication ---
 
         async function saveGamesToServer() {
+            isSaving = true;
             try {
                 const response = await fetch('./save_games.php', {
                     method: 'POST',
@@ -1083,15 +1086,24 @@
                 const data = await response.json();
                 if (data.status !== 'success') throw new Error(data.message);
                 if (localConfig.localBackup) localStorage.setItem('games_backup', JSON.stringify(games));
+                
+                try {
+                    const tsRes = await fetch('./check_timestamp.php?t=' + Date.now());
+                    if (tsRes.ok) serverTimestamps = await tsRes.json();
+                } catch(e) {}
+                isSaving = false;
+                
                 return true;
             } catch (error) {
                 console.error('Save error:', error);
                 showToast('サーバー保存に失敗: ' + error.message, 'error', 5000);
+                isSaving = false;
                 return false;
             }
         }
 
         async function saveConfigToServer() {
+            isSaving = true;
             try {
                 const response = await fetch('./save_config.php', {
                     method: 'POST',
@@ -1102,10 +1114,18 @@
                 if (data.status !== 'success') throw new Error(data.message);
                 if (localConfig.localBackup) localStorage.setItem('config_backup', JSON.stringify(serverConfig));
                 showToast('設定を保存しました', 'success');
+                
+                try {
+                    const tsRes = await fetch('./check_timestamp.php?t=' + Date.now());
+                    if (tsRes.ok) serverTimestamps = await tsRes.json();
+                } catch(e) {}
+                isSaving = false;
+                
                 return true;
             } catch (error) {
                 console.error('Config save error:', error);
                 showToast('設定の保存に失敗: ' + error.message, 'error', 5000);
+                isSaving = false;
                 return false;
             }
         }
@@ -1920,6 +1940,35 @@
                 if (e.target === els.gameModal) closeGameModal();
                 if (e.target === els.settingsModal) closeSettings();
             });
+
+            startAutoReload();
+        }
+
+        async function startAutoReload() {
+            try {
+                const res = await fetch('./check_timestamp.php?t=' + Date.now());
+                if (res.ok) {
+                    serverTimestamps = await res.json();
+                }
+            } catch(e) {}
+
+            setInterval(async () => {
+                if (isSaving) return;
+                try {
+                    const res = await fetch('./check_timestamp.php?t=' + Date.now());
+                    if (!res.ok) return;
+                    const ts = await res.json();
+                    
+                    if (serverTimestamps) {
+                        if (ts.games !== serverTimestamps.games || ts.config !== serverTimestamps.config) {
+                            console.log('Data changed remotely. Reloading...');
+                            location.reload();
+                        }
+                    } else {
+                        serverTimestamps = ts;
+                    }
+                } catch(e) {}
+            }, 3000);
         }
 
         function handleCategoryChange(select) {
