@@ -1410,7 +1410,14 @@
                     const [playedGame] = games.splice(globalIndex, 1);
                     playedGame.lastPlayed = Date.now();
                     playedGame.hasUpdate = false;
-                    games.unshift(playedGame); 
+                    
+                    // 最初の非ピン留めアイテムのインデックスを探す
+                    let insertIndex = 0;
+                    while (insertIndex < games.length && games[insertIndex].isPinned) {
+                        insertIndex++;
+                    }
+                    games.splice(insertIndex, 0, playedGame);
+                    
                     saveGamesToServer();       
                     renderGames();             
                 }
@@ -1689,8 +1696,13 @@
                     isPinned: false
                 };
                 
-                // 新規ゲームを先頭に追加
-                games.unshift(newGame);
+                // 新規ゲームを先頭（ピン留めの下）に追加
+                let insertIndex = 0;
+                while (insertIndex < games.length && games[insertIndex].isPinned) {
+                    insertIndex++;
+                }
+                games.splice(insertIndex, 0, newGame);
+                
                 showToast('ゲームを追加しました', 'success');
             }
 
