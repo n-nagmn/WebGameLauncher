@@ -31,16 +31,17 @@
 
         /* Light Mode Overrides */
         body.light-mode {
-            --bg-color: #f5f5f7;
+            --bg-color: #e0e0e5;
             --text-color: #1d1d1f;
-            --card-bg: rgba(255, 255, 255, 0.85);
-            --modal-content-bg: #ffffff;
-            --modal-bg: rgba(255, 255, 255, 0.8);
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --modal-content-bg: #f9f9f9;
+            --modal-bg: rgba(0, 0, 0, 0.2);
         }
 
         body.light-mode .game-card {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             background-color: var(--card-bg);
+            border: 1px solid rgba(0,0,0,0.05);
         }
         
         body.light-mode .title-bar {
@@ -981,7 +982,7 @@
                 </label>
                 <label class="form-group-checkbox">
                     <input type="checkbox" id="setting-light-mode">
-                    <span>ライトモード (白背景) を使用する</span>
+                    <span>ライトモードを使用する</span>
                 </label>
             </div>
 
