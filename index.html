@@ -378,6 +378,8 @@
             backdrop-filter: blur(4px);
             pointer-events: none;
             transition: opacity 0.2s;
+            text-align: right;
+            line-height: 1.2;
         }
 
         .game-card:hover .active-badge,
@@ -1023,6 +1025,15 @@
 
         // --- Utilities ---
 
+        function getUniqueUserId() {
+            let userId = localStorage.getItem('launcher_user_id');
+            if (!userId) {
+                userId = 'u_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('launcher_user_id', userId);
+            }
+            return userId;
+        }
+
         function escapeHtml(str) {
             if (typeof str !== 'string') return '';
             const div = document.createElement('div');
@@ -1308,7 +1319,21 @@
                 let activeBadge = '';
                 if (lastPlayed > 0 && diffMs < 3600000) {
                     const diffMins = Math.floor(diffMs / 60000);
-                    activeBadge = `<span class="active-badge">${diffMins}分前アクティブ</span>`;
+                    
+                    // ユニークユーザー数のカウント（過去1時間以内）
+                    let activeUserCount = 0;
+                    if (game.activeUsers) {
+                        const oneHourAgo = now - 3600000;
+                        activeUserCount = Object.values(game.activeUsers).filter(ts => ts > oneHourAgo).length;
+                    }
+                    // もしアクティブユーザーがいない（データ不整合など）場合は最低1人とする
+                    if (activeUserCount === 0) activeUserCount = 1;
+
+                    activeBadge = `
+                        <span class="active-badge">
+                            ${diffMins}分前アクティブ<br>
+                            <span style="font-size: 9px; opacity: 0.8;">(${activeUserCount}人)</span>
+                        </span>`;
                 }
 
                 const catLabel = game.category ? (CATEGORY_LABELS[game.category] || game.category) : '';
@@ -1434,6 +1459,19 @@
             const readHistory = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
             readHistory[game.id] = Date.now();
             localStorage.setItem('gameReadHistory', JSON.stringify(readHistory));
+
+            // アクティブユーザー情報を更新（ユニークIDを使用）
+            const userId = getUniqueUserId();
+            if (!game.activeUsers) game.activeUsers = {};
+            game.activeUsers[userId] = Date.now();
+
+            // 1時間以上前の古いユーザーデータを削除して肥大化を防ぐ
+            const oneHourAgo = Date.now() - 3600000;
+            for (const id in game.activeUsers) {
+                if (game.activeUsers[id] < oneHourAgo) {
+                    delete game.activeUsers[id];
+                }
+            }
 
             // ピン留めされていない場合のみ、先頭（ピン留めの下）に移動
             if (!game.isPinned) {
