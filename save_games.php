@@ -92,6 +92,22 @@ if (count($decoded) > $max_games) {
     exit;
 }
 
+// --- Start of Active User Merge Logic ---
+$existing_games = [];
+if (file_exists($file_path)) {
+    $existing_raw = file_get_contents($file_path);
+    $existing_games = json_decode($existing_raw, true) ?: [];
+}
+// 既存のアクティブユーザー情報をIDをキーにしたマップにする
+$existing_active_map = [];
+foreach ($existing_games as $ex_game) {
+    if (isset($ex_game['id']) && isset($ex_game['activeUsers']) && is_array($ex_game['activeUsers'])) {
+        $existing_active_map[$ex_game['id']] = $ex_game['activeUsers'];
+    }
+}
+$one_hour_ago_ms = (time() - 3600) * 1000;
+// --- End of Active User Merge Logic ---
+
 // Validate each game entry
 $required_fields = ['id', 'name', 'url'];
 $validated = [];
@@ -110,22 +126,42 @@ foreach ($decoded as $index => $game) {
         }
     }
 
+    $game_id = is_int($game['id']) ? $game['id'] : intval($game['id']);
+    
+    // アクティブユーザーのマージ処理
+    $new_active = isset($game['activeUsers']) && is_array($game['activeUsers']) ? $game['activeUsers'] : [];
+    $merged_active = $new_active;
+    
+    if (isset($existing_active_map[$game_id])) {
+        foreach ($existing_active_map[$game_id] as $uid => $ts) {
+            // サーバー側で保持している情報の方が新しい場合、または送られてきたデータにそのユーザーがいない場合は保持
+            if (!isset($merged_active[$uid]) || $ts > $merged_active[$uid]) {
+                $merged_active[$uid] = $ts;
+            }
+        }
+    }
+    
+    // ついでにサーバー側でも1時間以上前の古いデータを掃除
+    $merged_active = array_filter($merged_active, function($ts) use ($one_hour_ago_ms) {
+        return $ts > $one_hour_ago_ms;
+    });
+
     $validated[] = [
-        'id' => is_int($game['id']) ? $game['id'] : intval($game['id']),
+        'id' => $game_id,
         'name' => htmlspecialchars(mb_substr(trim($game['name']), 0, 100), ENT_QUOTES, 'UTF-8'),
         'url' => filter_var(trim($game['url']), FILTER_VALIDATE_URL) ?: '',
         'image' => isset($game['image']) ? htmlspecialchars(trim($game['image']), ENT_QUOTES, 'UTF-8') : '',    
         'category' => isset($game['category']) ? htmlspecialchars(mb_substr(trim($game['category']), 0, 50), ENT_QUOTES, 'UTF-8') : '',
-        'playersMin' => isset($game['playersMin']) ? max(1, intval($game['playersMin'])) : 0,
-        'playersMax' => isset($game['playersMax']) ? max(1, intval($game['playersMax'])) : 0,
-        'createdAt' => isset($game['createdAt']) ? intval($game['createdAt']) : time(),
-        'updatedAt' => isset($game['updatedAt']) ? intval($game['updatedAt']) : time(),
+        'playersMin' => isset($game['playersMin']) ? max(0, intval($game['playersMin'])) : 0,
+        'playersMax' => isset($game['playersMax']) ? max(0, intval($game['playersMax'])) : 0,
+        'createdAt' => isset($game['createdAt']) ? intval($game['createdAt']) : time() * 1000,
+        'updatedAt' => isset($game['updatedAt']) ? intval($game['updatedAt']) : time() * 1000,
         'lastPlayed' => isset($game['lastPlayed']) ? intval($game['lastPlayed']) : 0,
         'hasUpdate' => isset($game['hasUpdate']) ? filter_var($game['hasUpdate'], FILTER_VALIDATE_BOOLEAN) : false,
         'remoteUpdatedAt' => isset($game['remoteUpdatedAt']) ? intval($game['remoteUpdatedAt']) : 0,
         'lastHash' => isset($game['lastHash']) ? htmlspecialchars(trim($game['lastHash']), ENT_QUOTES, 'UTF-8') : '',
         'isPinned' => isset($game['isPinned']) ? filter_var($game['isPinned'], FILTER_VALIDATE_BOOLEAN) : false,
-        'activeUsers' => isset($game['activeUsers']) && is_array($game['activeUsers']) ? $game['activeUsers'] : []
+        'activeUsers' => $merged_active
     ];
 }
 
