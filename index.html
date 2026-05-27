@@ -1225,32 +1225,11 @@
 
             const searchTerm = els.searchInput.value.toLowerCase().trim();
             
-            // 並び替えは行わず、配列の順序を尊重する
-            filteredGames = games.filter(game => {
-                const matchesSearch = !searchTerm || game.name.toLowerCase().includes(searchTerm);
-                const matchesCategory = currentCategory === 'all' || game.category === currentCategory;
-
-                let matchesPlayers = true;
-                if (currentPlayerFilter !== 'all') {
-                    const gameMin = parseInt(game.playersMin, 10) || 0;
-                    const gameMax = parseInt(game.playersMax, 10) || 0;
-                    
-                    if (gameMin === 0 && gameMax === 0) {
-                        matchesPlayers = false; 
-                    } else {
-                        const gMin = gameMin || 1;
-                        const gMax = gameMax || gMin;
-                        
-                        if (currentPlayerFilter === '5plus') {
-                            matchesPlayers = (gMax >= 5);
-                        } else {
-                            const target = parseInt(currentPlayerFilter, 10);
-                            matchesPlayers = (target >= gMin && target <= gMax);
-                        }
-                    }
-                }
-
-                return matchesSearch && matchesCategory && matchesPlayers;
+            // ピン留めを最優先にしつつ、それ以外は配列の順序を維持する
+            filteredGames.sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return 0;
             });
 
             if (filteredGames.length === 0 && games.length > 0) {
@@ -1405,6 +1384,7 @@
             const index = games.findIndex(g => g.id === id);
             if (index !== -1) {
                 games[index].isPinned = !games[index].isPinned;
+                games[index].updatedAt = Date.now();
                 showToast(games[index].isPinned ? 'ピン留めしました' : 'ピン留めを解除しました', 'success');
                 renderGames();
                 saveGamesToServer();
