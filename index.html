@@ -133,6 +133,21 @@
             border-left-width: 5px;
         }
 
+        body.light-mode .category-chip.active,
+        body.light-mode .player-chip.active {
+            background: var(--focus-color);
+            color: #000;
+            border-color: rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(var(--focus-color-rgb), 0.4);
+        }
+
+        /* Active chips for both modes (vibrancy boost) */
+        .category-chip.active,
+        .player-chip.active {
+            box-shadow: 0 0 15px rgba(var(--focus-color-rgb), 0.3);
+            transform: translateY(-1px);
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
 
         html { scroll-behavior: smooth; }
