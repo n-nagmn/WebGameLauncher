@@ -760,6 +760,7 @@
     <header>
         <div class="header-left">
             <div class="logo">Web Game Launcher</div>
+            <div id="ranking-toggle-container"></div>
             <div class="category-filter" id="category-filter"></div>
             <div class="player-filter" id="player-filter"></div>
         </div>
@@ -1017,6 +1018,7 @@
         let categoryDragStartIndex = null;
         let focusedCardIndex = -1;
         let currentCategory = 'all';
+        let isRankingActive = false;
         let serverTimestamps = null;
         let isSaving = false;
 
@@ -1180,9 +1182,7 @@
                 return orderA - orderB;
             });
 
-            let catHtml = `
-                <div class="category-chip ${currentCategory === 'ranking' ? 'active' : ''}" data-cat="ranking" onclick="App.setCategory('ranking')">🏆 ランキング</div>
-                <div class="category-chip ${currentCategory === 'all' ? 'active' : ''}" data-cat="all" onclick="App.setCategory('all')">すべて</div>`;
+            let catHtml = `<div class="category-chip ${currentCategory === 'all' ? 'active' : ''}" data-cat="all" onclick="App.setCategory('all')">すべて</div>`;
             
             sortedCategories.forEach((cat, idx) => {
                 const label = CATEGORY_LABELS[cat] || cat;
@@ -1201,6 +1201,16 @@
                     </div>`;
             });
             catContainer.innerHTML = catHtml;
+
+            // Ranking Toggle (Separate from categories)
+            const rankingContainer = document.getElementById('ranking-toggle-container');
+            if (rankingContainer) {
+                rankingContainer.innerHTML = `
+                    <div class="category-chip ${isRankingActive ? 'active' : ''}" onclick="App.toggleRanking()" style="margin-left: 0; margin-right: 12px; border-color: rgba(255, 215, 0, 0.4);">
+                        🏆 ランキング
+                    </div>
+                `;
+            }
 
             // Player filter
             const playerContainer = document.getElementById('player-filter');
@@ -1229,7 +1239,7 @@
             
             filteredGames = games.filter(game => {
                 const matchesSearch = !searchTerm || game.name.toLowerCase().includes(searchTerm);
-                const matchesCategory = currentCategory === 'all' || currentCategory === 'ranking' || game.category === currentCategory;
+                const matchesCategory = currentCategory === 'all' || game.category === currentCategory;
 
                 let matchesPlayers = true;
                 if (currentPlayerFilter !== 'all') {
@@ -1254,11 +1264,11 @@
                 return matchesSearch && matchesCategory && matchesPlayers;
             });
 
-            if (currentCategory === 'ranking') {
-                // ランキング時はプレイ回数順（降順）
+            if (isRankingActive) {
+                // ランキング有効時はプレイ回数順（降順）
                 filteredGames.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
             } else {
-                // ピン留めを最優先にしつつ、それ以外は配列の順序を維持する
+                // 通常時はピン留めを最優先
                 filteredGames.sort((a, b) => {
                     if (a.isPinned && !b.isPinned) return -1;
                     if (!a.isPinned && b.isPinned) return 1;
@@ -2090,11 +2100,16 @@
             }
         }
 
+        function toggleRanking() {
+            isRankingActive = !isRankingActive;
+            renderGames();
+        }
+
         return {
             init,
             openGameModal, closeGameModal, saveGame, deleteGame, deleteCategory,
             openSettings, closeSettings, saveSettings, exportData, importData,
-            setCategory, setPlayerFilter, handleCategoryChange, togglePin,
+            setCategory, setPlayerFilter, handleCategoryChange, togglePin, toggleRanking,
             handleCategoryDragStart, handleCategoryDragOver, handleCategoryDrop, handleCategoryDragEnd
         };
     })();
