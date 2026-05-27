@@ -2013,6 +2013,11 @@
                     }
                 } catch(e) {}
             }, 3000);
+
+            // 1分ごとに表示を更新して「何分前アクティブ」の時間を最新に保つ
+            setInterval(() => {
+                renderGames();
+            }, 60000);
         }
 
         function handleCategoryChange(select) {
