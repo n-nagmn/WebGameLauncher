@@ -1462,7 +1462,7 @@
 
             // アクティブユーザー情報を更新（ユニークIDを使用）
             const userId = getUniqueUserId();
-            if (!game.activeUsers) game.activeUsers = {};
+            if (!game.activeUsers || Array.isArray(game.activeUsers)) game.activeUsers = {}; 
             game.activeUsers[userId] = Date.now();
 
             // 1時間以上前の古いユーザーデータを削除して肥大化を防ぐ
