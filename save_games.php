@@ -181,6 +181,7 @@ foreach ($decoded as $index => $game) {
         'remoteUpdatedAt' => $is_outdated ? $server_game['remoteUpdatedAt'] : (isset($game['remoteUpdatedAt']) ? intval($game['remoteUpdatedAt']) : 0),
         'lastHash' => $is_outdated ? $server_game['lastHash'] : (isset($game['lastHash']) ? htmlspecialchars(trim($game['lastHash']), ENT_QUOTES, 'UTF-8') : ''),
         'isPinned' => $is_outdated ? $server_game['isPinned'] : (isset($game['isPinned']) ? filter_var($game['isPinned'], FILTER_VALIDATE_BOOLEAN) : false),
+        'playCount' => isset($game['playCount']) ? intval($game['playCount']) : ($server_game && isset($server_game['playCount']) ? intval($server_game['playCount']) : 0),
         'activeUsers' => $merged_active
     ];
 }

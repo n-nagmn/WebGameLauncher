@@ -1180,7 +1180,9 @@
                 return orderA - orderB;
             });
 
-            let catHtml = `<div class="category-chip ${currentCategory === 'all' ? 'active' : ''}" data-cat="all" onclick="App.setCategory('all')">すべて</div>`;
+            let catHtml = `
+                <div class="category-chip ${currentCategory === 'ranking' ? 'active' : ''}" data-cat="ranking" onclick="App.setCategory('ranking')">🏆 ランキング</div>
+                <div class="category-chip ${currentCategory === 'all' ? 'active' : ''}" data-cat="all" onclick="App.setCategory('all')">すべて</div>`;
             
             sortedCategories.forEach((cat, idx) => {
                 const label = CATEGORY_LABELS[cat] || cat;
@@ -1227,7 +1229,7 @@
             
             filteredGames = games.filter(game => {
                 const matchesSearch = !searchTerm || game.name.toLowerCase().includes(searchTerm);
-                const matchesCategory = currentCategory === 'all' || game.category === currentCategory;
+                const matchesCategory = currentCategory === 'all' || currentCategory === 'ranking' || game.category === currentCategory;
 
                 let matchesPlayers = true;
                 if (currentPlayerFilter !== 'all') {
@@ -1252,12 +1254,17 @@
                 return matchesSearch && matchesCategory && matchesPlayers;
             });
 
-            // ピン留めを最優先にしつつ、それ以外は配列の順序を維持する
-            filteredGames.sort((a, b) => {
-                if (a.isPinned && !b.isPinned) return -1;
-                if (!a.isPinned && b.isPinned) return 1;
-                return 0;
-            });
+            if (currentCategory === 'ranking') {
+                // ランキング時はプレイ回数順（降順）
+                filteredGames.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
+            } else {
+                // ピン留めを最優先にしつつ、それ以外は配列の順序を維持する
+                filteredGames.sort((a, b) => {
+                    if (a.isPinned && !b.isPinned) return -1;
+                    if (!a.isPinned && b.isPinned) return 1;
+                    return 0;
+                });
+            }
 
             if (filteredGames.length === 0 && games.length > 0) {
                 grid.innerHTML = `
@@ -1466,6 +1473,9 @@
             const readHistory = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
             readHistory[game.id] = Date.now();
             localStorage.setItem('gameReadHistory', JSON.stringify(readHistory));
+
+            // プレイ回数をインクリメント
+            game.playCount = (game.playCount || 0) + 1;
 
             // アクティブユーザー情報を更新（ユニークIDを使用）
             const userId = getUniqueUserId();
