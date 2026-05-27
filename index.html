@@ -364,6 +364,27 @@
         .card-badge.new { background: var(--focus-color); color: #000; }
         .card-badge.pinned-badge { background: var(--pin-color); color: #000; }
 
+        .active-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #ADD8E6;
+            color: #000;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            z-index: 15;
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .game-card:hover .active-badge,
+        .game-card.focused .active-badge {
+            opacity: 0;
+        }
+
         .title-bar {
             background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.6));
             padding: 10px 12px;
@@ -1280,6 +1301,16 @@
                     badge = '<span class="card-badge new">NEW</span>';
                 }
                 
+                // --- Active Badge Logic ---
+                const now = Date.now();
+                const lastPlayed = game.lastPlayed || 0;
+                const diffMs = now - lastPlayed;
+                let activeBadge = '';
+                if (lastPlayed > 0 && diffMs < 3600000) {
+                    const diffMins = Math.floor(diffMs / 60000);
+                    activeBadge = `<span class="active-badge">${diffMins}分前アクティブ</span>`;
+                }
+
                 const catLabel = game.category ? (CATEGORY_LABELS[game.category] || game.category) : '';
                 const catHtml = catLabel ? `<div class="card-category">${escapeHtml(catLabel)}</div>` : '';
 
@@ -1310,6 +1341,7 @@
 
                 card.innerHTML = `
                     ${badge}
+                    ${activeBadge}
                     ${playerBadge}
                     <button class="pin-btn" title="${game.isPinned ? '固定を解除' : '位置を固定'}" onclick="App.togglePin(${game.id}, event)">${game.isPinned ? '✖️' : '📌'}</button>
                     <button class="edit-btn" title="編集" onclick="App.openGameModal(${game.id}, event)" aria-label="${escapeHtml(game.name)}を編集">✎</button>
