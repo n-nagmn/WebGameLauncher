@@ -245,6 +245,7 @@
             max-width: 800px;
             max-height: 80vh;
             overflow-y: auto;
+            flex-shrink: 0;
             transform: translateX(120%);
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
             pointer-events: auto;
@@ -1593,11 +1594,26 @@
             });
             container.innerHTML = html;
             
-            // Ensure chat AA doesn't take up too much vertical space but can be scrolled
-            container.querySelectorAll('.chat-message-text.aa-font').forEach(el => {
-                el.style.maxHeight = '250px';
-                el.style.overflowY = 'auto';
-                el.style.overflowX = 'auto';
+            // AA Auto-scaling to fit within a defined box
+            requestAnimationFrame(() => {
+                container.querySelectorAll('.chat-message-text.aa-font').forEach(el => {
+                    // Reset zoom to measure original size
+                    el.style.zoom = 1;
+                    const parentW = el.parentElement.clientWidth;
+                    const maxW = parentW - 24; // Parent width minus padding
+                    const maxH = 250; // Defined box height
+
+                    const scaleW = maxW / el.scrollWidth;
+                    const scaleH = maxH / el.scrollHeight;
+
+                    // Scale down with a 2% safety margin to prevent 1px scrollbars
+                    const scale = Math.min(1, scaleW, scaleH) * 0.98;
+                    
+                    if (scale < 1) {
+                        el.style.zoom = scale;
+                        el.style.overflow = 'hidden';
+                    }
+                });
             });
 
             // Scroll to bottom
