@@ -1590,8 +1590,16 @@
             select.innerHTML = options;
             
             // Restore name
-            const savedName = localStorage.getItem('chat_name');
-            if (savedName) document.getElementById('chat-name').value = savedName;
+            let savedName = localStorage.getItem('chat_name');
+            if (savedName === '名無し') {
+                localStorage.removeItem('chat_name');
+                savedName = null;
+            }
+            if (savedName) {
+                document.getElementById('chat-name').value = savedName;
+            } else {
+                document.getElementById('chat-name').value = '';
+            }
 
             fetchChat();
         }
