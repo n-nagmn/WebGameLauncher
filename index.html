@@ -1402,17 +1402,6 @@
             
             // Ensure notification can scroll if it's too large
             setTimeout(() => notif.classList.add('show'), 10);
-
-            const timePassed = Date.now() - msg.timestamp;
-            const timeRemaining = 900000 - timePassed; // 15 minutes = 900000 ms
-            if (timeRemaining > 0) {
-                setTimeout(() => {
-                    if (notif.parentNode) {
-                        notif.classList.add('hiding');
-                        setTimeout(() => notif.remove(), 300);
-                    }
-                }, timeRemaining);
-            }
         }
 
         function hexToRgb(hex) {
@@ -2822,6 +2811,7 @@
     </script>
 </body>
 </html>
+
 
 
 
