@@ -1485,13 +1485,9 @@
                     if (JSON.stringify(newMessages) !== JSON.stringify(chatMessages)) {
                         // Check for new messages from others
                         if (chatMessages.length > 0) {
-                            const newItems = newMessages.filter(m => !chatMessages.some(old => old.timestamp === m.timestamp));
+                            const newItems = newMessages.filter(m => !chatMessages.some(old => old.id === m.id || Math.abs(old.timestamp - m.timestamp) < 5000 && old.name === m.name && old.message === m.message));
                             newItems.forEach(msg => {
-                                // Don't notify if the user just sent it (optimistic update handles it)
-                                const savedName = localStorage.getItem('chat_name') || '名無し';
-                                if (msg.name !== savedName) {
-                                    showChatNotification(msg);
-                                }
+                                showChatNotification(msg);
                             });
                         }
                         chatMessages = newMessages;
@@ -1561,18 +1557,10 @@
             const savedName = localStorage.getItem('chat_name');
             if (savedName) document.getElementById('chat-name').value = savedName;
 
-            fetchChat();
-            if (!chatPollInterval) {
-                chatPollInterval = setInterval(fetchChat, 5000);
-            }
         }
 
         function closeChat() {
             document.getElementById('chat-sidebar').classList.remove('active');
-            if (chatPollInterval) {
-                clearInterval(chatPollInterval);
-                chatPollInterval = null;
-            }
         }
 
         async function sendChatMessage() {
@@ -1608,7 +1596,6 @@
                     body: JSON.stringify({ name, message, gameId })
                 });
                 if (res.ok) {
-                    showToast('チャットを送信しました', 'success');
                     fetchChat();
                 } else {
                     showToast('チャット送信失敗', 'error');
@@ -2598,6 +2585,9 @@
             els.searchInput = document.getElementById('search-input');
 
             // Load Global Config
+            fetchChat();
+            setInterval(fetchChat, 5000);
+            
             try {
                 const res = await fetch('./config.json?t=' + Date.now());
                 if (res.ok) {
