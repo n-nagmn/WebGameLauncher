@@ -1174,10 +1174,6 @@
                     <span>ホバー時のアニメーションを有効にする</span>
                 </label>
                 <label class="form-group-checkbox">
-                    <input type="checkbox" id="setting-local-backup">
-                    <span>ブラウザにローカルバックアップを作成する</span>
-                </label>
-                <label class="form-group-checkbox">
                     <input type="checkbox" id="setting-light-mode">
                     <span>ライトモードを使用する</span>
                 </label>
@@ -1276,7 +1272,6 @@
             showTitle: true,
             openInNewTab: true,
             enableAnimations: true,
-            localBackup: true,
             isLightMode: false
         };
 
@@ -1458,7 +1453,6 @@
                 });
                 const data = await response.json();
                 if (data.status !== 'success') throw new Error(data.message);
-                if (localConfig.localBackup) localStorage.setItem('games_backup', JSON.stringify(games));
                 
                 try {
                     const tsRes = await fetch('./check_timestamp.php?t=' + Date.now());
@@ -1485,7 +1479,6 @@
                 });
                 const data = await response.json();
                 if (data.status !== 'success') throw new Error(data.message);
-                if (localConfig.localBackup) localStorage.setItem('config_backup', JSON.stringify(serverConfig));
                 showToast('設定を保存しました', 'success');
                 
                 try {
@@ -2379,7 +2372,6 @@
             document.getElementById('setting-show-title').checked = localConfig.showTitle ?? true;
             document.getElementById('setting-new-tab').checked = localConfig.openInNewTab ?? true;
             document.getElementById('setting-animations').checked = localConfig.enableAnimations ?? true;
-            document.getElementById('setting-local-backup').checked = localConfig.localBackup ?? true;
             document.getElementById('setting-light-mode').checked = localConfig.isLightMode ?? false;
 
             // Server Config
@@ -2412,7 +2404,6 @@
                 showTitle: document.getElementById('setting-show-title').checked,
                 openInNewTab: document.getElementById('setting-new-tab').checked,
                 enableAnimations: document.getElementById('setting-animations').checked,
-                localBackup: document.getElementById('setting-local-backup').checked,
                 isLightMode: document.getElementById('setting-light-mode').checked
             };
             localStorage.setItem('launcher_local_config', JSON.stringify(localConfig));
@@ -2762,3 +2753,4 @@
     </script>
 </body>
 </html>
+

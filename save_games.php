@@ -186,40 +186,8 @@ foreach ($decoded as $index => $game) {
     ];
 }
 
-// Try backup (non-critical)
 $backup_success = false;
 $backup_name = null;
-
-if (file_exists($file_path)) {
-    $backup_dir = __DIR__ . '/backups';
-
-    // Try to create backup directory
-    if (!is_dir($backup_dir)) {
-        $old_umask = umask(0);
-        $dir_created = @mkdir($backup_dir, 0755, true);
-        umask($old_umask);
-    } else {
-        $dir_created = true;
-    }
-
-    if ($dir_created && is_writable($backup_dir)) {
-        $backup_name = $backup_dir . '/games_' . date('Ymd_His') . '_' . uniqid() . '.json';
-        if (@copy($file_path, $backup_name)) {
-            $backup_success = true;
-
-            // Cleanup old backups (keep 5)
-            $backups = glob($backup_dir . '/games_*.json');
-            if ($backups && count($backups) > 5) {
-                usort($backups, function($a, $b) {
-                    return filemtime($a) - filemtime($b);
-                });
-                foreach (array_slice($backups, 0, count($backups) - 5) as $old) {
-                    @unlink($old);
-                }
-            }
-        }
-    }
-}
 
 // Write data (main operation)
 $json_output = json_encode($validated, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
