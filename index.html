@@ -1813,7 +1813,7 @@
             if (isRankingActive) {
                 // ランキング有効時はプレイ回数順（降順）
                 filteredGames.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
-            } else { filteredGames.sort((a, b) => { if (a.isPinned && !b.isPinned) return -1; if (!a.isPinned && b.isPinned) return 1; if (a.hasUpdate && !b.hasUpdate) return -1; if (!a.hasUpdate && b.hasUpdate) return 1; return (b.updatedAt || 0) - (a.updatedAt || 0); }); }
+            } else { filteredGames.sort((a, b) => { if (a.isPinned && !b.isPinned) return -1; if (!a.isPinned && b.isPinned) return 1; if (a.hasUpdate && !b.hasUpdate) return -1; if (!a.hasUpdate && b.hasUpdate) return 1; return (b.lastPlayed || 0) - (a.lastPlayed || 0); }); }
 
             if (filteredGames.length === 0 && games.length > 0) {
                 grid.innerHTML = `
@@ -2822,6 +2822,7 @@
     </script>
 </body>
 </html>
+
 
 
 

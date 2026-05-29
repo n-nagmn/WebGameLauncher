@@ -89,27 +89,31 @@ $new_message = [
 $existing_messages = [];
 $result = false;
 
-$fp = fopen($file_path, 'c+');
-if ($fp) {
-    if (flock($fp, LOCK_EX)) {
-        $raw = stream_get_contents($fp);
-        $existing_messages = json_decode($raw, true) ?: [];
-        
-        array_push($existing_messages, $new_message);
-        
-        // Keep only the last $max_messages
-        if (count($existing_messages) > $max_messages) {
-            $existing_messages = array_slice($existing_messages, -$max_messages);
-        }
-        
-        $json_output = json_encode($existing_messages, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-        ftruncate($fp, 0);
-        rewind($fp);
-        fwrite($fp, $json_output);
-        flock($fp, LOCK_UN);
+$lock_file = __DIR__ . '/chat.lock';
+$fp_lock = fopen($lock_file, 'w');
+
+if ($fp_lock && flock($fp_lock, LOCK_EX)) {
+    if (file_exists($file_path)) {
+        $existing_raw = file_get_contents($file_path);
+        $existing_messages = json_decode($existing_raw, true) ?: [];
+    }
+    
+    array_push($existing_messages, $new_message);
+    
+    // Keep only the last $max_messages
+    if (count($existing_messages) > $max_messages) {
+        $existing_messages = array_slice($existing_messages, -$max_messages);
+    }
+    
+    $json_output = json_encode($existing_messages, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    if ($json_output !== false) {
+        file_put_contents($file_path, $json_output);
         $result = true;
     }
-    fclose($fp);
+    flock($fp_lock, LOCK_UN);
+}
+if ($fp_lock) {
+    fclose($fp_lock);
 }
 
 if ($result !== false) {
