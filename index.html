@@ -1374,7 +1374,7 @@
             
             let gameHtml = '';
             if (msg.gameId) {
-                const game = games.find(g => g.id === msg.gameId);
+                const game = games.find(g => g.id == msg.gameId);
                 if (game) {
                     gameHtml = `<div class="chat-notification-game">🎮 ${escapeHtml(game.name)}</div>`;
                 }
@@ -1562,7 +1562,7 @@
                 const name = msg.name || '名無し';
                 let gameHtml = '';
                 if (msg.gameId) {
-                    const game = games.find(g => g.id === msg.gameId);
+                    const game = games.find(g => g.id == msg.gameId);
                     if (game) {
                         gameHtml = `<div class="chat-message-game" onclick="App.openChatGame(${game.id})">🎮 ${escapeHtml(game.name)}</div>`;
                     }
@@ -1693,7 +1693,7 @@
         }
 
         function openChatGame(id) {
-            const game = games.find(g => g.id === id);
+            const game = games.find(g => g.id == id);
             if (game) {
                 launchGame(game);
             }
@@ -1953,7 +1953,7 @@
         // --- Pin Function ---
         function togglePin(id, event) {
             if (event) event.stopPropagation();
-            const index = games.findIndex(g => g.id === id);
+            const index = games.findIndex(g => g.id == id);
             if (index !== -1) {
                 games[index].isPinned = !games[index].isPinned;
                 games[index].updatedAt = Date.now();
@@ -2219,7 +2219,7 @@
             categoryInput.innerHTML = optionsHtml;
 
             if (id !== null) {
-                const game = games.find(g => g.id === id);
+                const game = games.find(g => g.id == id);
                 if (!game) return;
                 titleEl.textContent = 'ゲームを編集';
                 idInput.value = game.id;
@@ -2287,7 +2287,7 @@
 
             if (idStr) {
                 const id = parseInt(idStr, 10);
-                const index = games.findIndex(g => g.id === id);
+                const index = games.findIndex(g => g.id == id);
                 if (index !== -1) {
                     if (!image) {
                         image = (games[index].name !== name) ? generatePlaceholderImage(name) : games[index].image;
@@ -2328,7 +2328,7 @@
         }
 
         function deleteGame(id) {
-            const game = games.find(g => g.id === id);
+            const game = games.find(g => g.id == id);
             if (game) {
                 games = games.filter(g => g.id !== id);
                 renderGames();
@@ -2839,6 +2839,7 @@
     </script>
 </body>
 </html>
+
 
 
 
