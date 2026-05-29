@@ -1301,8 +1301,10 @@
         let serverTimestamps = null;
         let isSaving = false;
         
+        // Chat state
         let chatMessages = [];
-        let chatPollInterval = null;
+        let chatSidebarOpen = false;
+        let initialChatLoaded = false;
 
         // --- DOM Elements ---
         const els = {};
@@ -1525,14 +1527,17 @@
                         });
 
                         // Check for new messages from others
-                        if (chatMessages.length > 0) {
+                        if (initialChatLoaded) {
                             const newItems = newMessages.filter(m => !chatMessages.some(old => old.id === m.id || (Math.abs(old.timestamp - m.timestamp) < 60000 && old.name === m.name && old.message === m.message)));
                             newItems.forEach(msg => {
                                 showChatNotification(msg);
                             });
                         }
                         chatMessages = newMessages;
+                        initialChatLoaded = true;
                         renderChat();
+                    } else {
+                        initialChatLoaded = true;
                     }
                 }
             } catch (e) {
