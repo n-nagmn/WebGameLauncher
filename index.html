@@ -1385,7 +1385,7 @@
             };
 
             container.appendChild(notif);
-            requestAnimationFrame(() => notif.classList.add('show'));
+            setTimeout(() => notif.classList.add('show'), 10);
 
             const timePassed = Date.now() - msg.timestamp;
             const timeRemaining = 900000 - timePassed; // 15 minutes = 900000 ms
@@ -1518,7 +1518,7 @@
                             const nMsg = notif.dataset.messageText;
                             if (ts && !newMessages.some(m => 
                                 (m.timestamp === ts) || 
-                                (Math.abs(m.timestamp - ts) < 5000 && m.name === nName && m.message === nMsg)
+                                (m.name === nName && m.message === nMsg && Math.abs(m.timestamp - ts) < 60000)
                             )) {
                                 notif.classList.add('hiding');
                                 setTimeout(() => notif.remove(), 300);
@@ -1527,7 +1527,7 @@
 
                         // Check for new messages from others
                         if (chatMessages.length > 0) {
-                            const newItems = newMessages.filter(m => !chatMessages.some(old => old.id === m.id || Math.abs(old.timestamp - m.timestamp) < 5000 && old.name === m.name && old.message === m.message));
+                            const newItems = newMessages.filter(m => !chatMessages.some(old => old.id === m.id || (Math.abs(old.timestamp - m.timestamp) < 60000 && old.name === m.name && old.message === m.message)));
                             newItems.forEach(msg => {
                                 showChatNotification(msg);
                             });

@@ -66,7 +66,7 @@ if ($action === 'delete') {
 // Default post action
 $name = isset($decoded['name']) ? htmlspecialchars(mb_substr(trim($decoded['name']), 0, 30), ENT_QUOTES, 'UTF-8') : '名無し';
 $message = isset($decoded['message']) ? htmlspecialchars(mb_substr(trim($decoded['message']), 0, 200), ENT_QUOTES, 'UTF-8') : '';
-$gameId = isset($decoded['gameId']) ? intval($decoded['gameId']) : null;
+$gameId = !empty($decoded['gameId']) ? htmlspecialchars(trim($decoded['gameId']), ENT_QUOTES, 'UTF-8') : null;
 $timestamp = time() * 1000;
 
 if ($name === '' || $message === '') {
