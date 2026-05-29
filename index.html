@@ -1335,10 +1335,16 @@
             container.appendChild(toast);
             requestAnimationFrame(() => toast.classList.add('show'));
 
-            setTimeout(() => {
+            const tId = setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, duration);
+
+            toast.onclick = () => {
+                clearTimeout(tId);
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            };
         }
 
         function showChatNotification(msg) {
@@ -1369,10 +1375,24 @@
             notif.onclick = () => {
                 notif.classList.add('hiding');
                 setTimeout(() => notif.remove(), 300);
+                if (msg.gameId) {
+                    openChatGame(msg.gameId);
+                }
             };
 
             container.appendChild(notif);
             requestAnimationFrame(() => notif.classList.add('show'));
+
+            const timePassed = Date.now() - msg.timestamp;
+            const timeRemaining = 900000 - timePassed; // 15 minutes = 900000 ms
+            if (timeRemaining > 0) {
+                setTimeout(() => {
+                    if (notif.parentNode) {
+                        notif.classList.add('hiding');
+                        setTimeout(() => notif.remove(), 300);
+                    }
+                }, timeRemaining);
+            }
         }
 
         function hexToRgb(hex) {
@@ -2698,7 +2718,6 @@
         }
 
         async function deleteChatMessage(timestamp) {
-            if (!confirm('このメッセージを削除しますか？')) return;
             try {
                 const res = await fetch('./post_chat.php', {
                     method: 'POST',
