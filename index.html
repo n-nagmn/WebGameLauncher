@@ -1389,7 +1389,26 @@
             };
 
             container.appendChild(notif);
-            setTimeout(() => notif.classList.add('show'), 10);
+            
+            // Auto-scale AA to prevent scrollbars in notification
+            requestAnimationFrame(() => {
+                const aaText = notif.querySelector('.chat-notification-text.aa-font');
+                if (aaText) {
+                    aaText.style.zoom = 1;
+                    const maxW = 800 - 32; // 800px max-width minus 32px padding
+                    const maxH = window.innerHeight * 0.8 - 60; // 80vh max-height minus header/padding
+
+                    const scaleW = maxW / aaText.scrollWidth;
+                    const scaleH = maxH / aaText.scrollHeight;
+                    const scale = Math.min(1, scaleW, scaleH);
+
+                    if (scale < 1) {
+                        aaText.style.zoom = scale;
+                        notif.style.overflow = 'hidden'; // Hide scrollbars since we scaled it to fit
+                    }
+                }
+                notif.classList.add('show');
+            });
 
             const timePassed = Date.now() - msg.timestamp;
             const timeRemaining = 900000 - timePassed; // 15 minutes = 900000 ms
