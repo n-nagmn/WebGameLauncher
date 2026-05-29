@@ -1369,7 +1369,7 @@
                     <span>${timeStr}</span>
                 </div>
                 ${gameHtml}
-                ${(() => { let msgText = msg.message; if (msgText.startsWith('/aa\n') || msgText.startsWith('/aa ')) { return `<div class="chat-notification-text aa-font">${escapeHtml(msgText.substring(4))}</div>`; } return `<div class="chat-notification-text">${escapeHtml(msgText)}</div>`; })()}
+                ${(() => { let msgText = msg.message; if (msgText.toLowerCase().startsWith('/aa')) { return `<div class="chat-notification-text aa-font">${escapeHtml(msgText.replace(/^\/aa[\s\r\n]*/i, ''))}</div>`; } return `<div class="chat-notification-text">${escapeHtml(msgText)}</div>`; })()}
             `;
 
             notif.onclick = () => {
@@ -1566,7 +1566,7 @@
                             <button onclick="App.deleteChatMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>
                         </div>
                         ${gameHtml}
-                        ${(() => { let msgText = msg.message; if (msgText.startsWith('/aa\n') || msgText.startsWith('/aa ')) { return `<div class="chat-message-text aa-font">${escapeHtml(msgText.substring(4))}</div>`; } return `<div class="chat-message-text">${escapeHtml(msgText)}</div>`; })()}
+                        ${(() => { let msgText = msg.message; if (msgText.toLowerCase().startsWith('/aa')) { return `<div class="chat-message-text aa-font">${escapeHtml(msgText.replace(/^\/aa[\s\r\n]*/i, ''))}</div>`; } return `<div class="chat-message-text">${escapeHtml(msgText)}</div>`; })()}
                     </div>
                 `;
             });
@@ -2772,6 +2772,7 @@
     </script>
 </body>
 </html>
+
 
 
 
