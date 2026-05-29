@@ -1415,8 +1415,8 @@
             if (aaEl) {
                 requestAnimationFrame(() => {
                     aaEl.style.zoom = 1;
-                    const maxW = 350;
-                    const maxH = 200;
+                    const maxW = 750;
+                    const maxH = window.innerHeight * 0.75;
                     const scaleW = maxW / aaEl.scrollWidth;
                     const scaleH = maxH / aaEl.scrollHeight;
                     const scale = Math.min(1, scaleW, scaleH) * 0.98;
@@ -2873,6 +2873,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
