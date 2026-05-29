@@ -102,6 +102,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+    if ($post_action === 'delete') {
+        $filename = $decoded['filename'] ?? '';
+        if (empty($filename) || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
+            $response["message"] = "不正なファイル名です";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $target_backup = $backup_dir . '/' . $filename;
+        if (!file_exists($target_backup)) {
+            $response["message"] = "バックアップファイルが見つかりません";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if (unlink($target_backup)) {
+            $response["status"] = "success";
+            $response["message"] = "バックアップを削除しました";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        } else {
+            $response["message"] = "削除に失敗しました。パーミッションを確認してください。";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        }
+        exit;
+    }
     
     $response["message"] = "無効なアクションです";
     echo json_encode($response, JSON_UNESCAPED_UNICODE);

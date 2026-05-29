@@ -1165,7 +1165,8 @@
                         </select>
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        <button class="btn-danger" style="flex:1; padding: 10px;" onclick="App.restoreServerBackup()">選択したバックアップから復元</button>
+                        <button class="btn-danger" style="flex:2; padding: 10px;" onclick="App.restoreServerBackup()">選択したバックアップから復元</button>
+                        <button class="btn-danger" style="flex:1; padding: 10px; background: #555;" onclick="App.deleteServerBackup()">削除</button>
                     </div>
                 </div>
             </div>
@@ -2445,6 +2446,34 @@
             }
         }
 
+        async function deleteServerBackup() {
+            const select = document.getElementById('server-backup-select');
+            const filename = select.value;
+            if (!filename) {
+                showToast('削除するバックアップを選択してください', 'warning');
+                return;
+            }
+            if (!confirm(`バックアップ「${filename}」を削除しますか？\nこの操作は元に戻せません。`)) {
+                return;
+            }
+            try {
+                const res = await fetch('./manage_backups.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete', filename: filename })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast(data.message, 'success');
+                    loadServerBackups();
+                } else {
+                    showToast(data.message || '削除失敗', 'error');
+                }
+            } catch(e) {
+                showToast('通信エラー', 'error');
+            }
+        }
+
         function updateClock() {
             // 時計機能は削除されているが、互換性のために残す
         }
@@ -2567,7 +2596,7 @@
             setCategory, setPlayerFilter, handleCategoryChange, togglePin, toggleRanking,
             handleCategoryDragStart, handleCategoryDragOver, handleCategoryDrop, handleCategoryDragEnd,
             openChat, closeChat, sendChatMessage, openChatGame,
-            loadServerBackups, createServerBackup, restoreServerBackup
+            loadServerBackups, createServerBackup, restoreServerBackup, deleteServerBackup
         };
     })();
 
