@@ -1355,6 +1355,10 @@
             const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             const name = msg.name || '名無し';
             
+            notif.dataset.timestamp = msg.timestamp;
+            notif.dataset.name = name;
+            notif.dataset.messageText = msg.message;
+            
             let gameHtml = '';
             if (msg.gameId) {
                 const game = games.find(g => g.id === msg.gameId);
@@ -1507,6 +1511,20 @@
                 if (res.ok) {
                     const newMessages = await res.json();
                     if (JSON.stringify(newMessages) !== JSON.stringify(chatMessages)) {
+                        // Remove notifications for deleted messages
+                        document.querySelectorAll('.chat-notification').forEach(notif => {
+                            const ts = parseInt(notif.dataset.timestamp);
+                            const nName = notif.dataset.name;
+                            const nMsg = notif.dataset.messageText;
+                            if (ts && !newMessages.some(m => 
+                                (m.timestamp === ts) || 
+                                (Math.abs(m.timestamp - ts) < 5000 && m.name === nName && m.message === nMsg)
+                            )) {
+                                notif.classList.add('hiding');
+                                setTimeout(() => notif.remove(), 300);
+                            }
+                        });
+
                         // Check for new messages from others
                         if (chatMessages.length > 0) {
                             const newItems = newMessages.filter(m => !chatMessages.some(old => old.id === m.id || Math.abs(old.timestamp - m.timestamp) < 5000 && old.name === m.name && old.message === m.message));
