@@ -1761,11 +1761,12 @@
             msgInput.value = '';
             msgInput.style.height = 'auto';
             
+            const replyTo = currentReplyToId;
+            cancelReply();
+            
             try {
                 const res = await fetch('./post_chat.php', {
                     method: 'POST',
-            const replyTo = currentReplyToId;
-            cancelReply();
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, message, gameId, replyTo, clientId: myClientId })
                 });
