@@ -78,7 +78,16 @@ if ($name === '' || $message === '') {
 $line_count = substr_count($message, "\n") + 1;
 $is_aa = stripos(trim($message), '/a') === 0;
 
-if (!$is_aa && mb_strlen($message, 'UTF-8') > 300) {
+if ($is_aa) {
+    $lines = explode("\n", $message);
+    foreach ($lines as $line) {
+        if (mb_strlen(trim($line, "\r\n"), 'UTF-8') > 1000) {
+            $response["message"] = "アスキーアートの1行の最大文字数は1000文字までです。";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+} else if (mb_strlen($message, 'UTF-8') > 300) {
     $response["message"] = "通常チャットの最大文字数は300文字です。";
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
     exit;
