@@ -1602,6 +1602,7 @@
                     body: JSON.stringify({ name, message, gameId })
                 });
                 if (res.ok) {
+                    showChatNotification(tempMsg);
                     fetchChat();
                 } else {
                     showToast('チャット送信失敗', 'error');
