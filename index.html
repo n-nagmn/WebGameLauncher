@@ -966,7 +966,7 @@
         .chat-input-area input:focus, .chat-input-area select:focus, .chat-input-area textarea:focus {
             border-color: var(--focus-color);
         }
-        .chat-input-area textarea { resize: none; overflow-y: hidden; max-height: 150px; }
+        .chat-input-area textarea { resize: none; overflow-y: hidden; max-height: 50vh; }
         
         body.light-mode .chat-message-item { background: rgba(0,0,0,0.08); }
         body.light-mode .chat-message-name { color: #111; }
@@ -2629,9 +2629,10 @@
                 });
                 chatMsgInput.addEventListener('input', function() {
                     this.style.height = 'auto';
-                    const newHeight = Math.min(this.scrollHeight, 150);
+                    const maxH = window.innerHeight * 0.5;
+                    const newHeight = Math.min(this.scrollHeight, maxH);
                     this.style.height = newHeight + 'px';
-                    this.style.overflowY = this.scrollHeight > 150 ? 'auto' : 'hidden';
+                    this.style.overflowY = this.scrollHeight > maxH ? 'auto' : 'hidden';
                 });
             }
             els.gameModal = document.getElementById('game-modal');
