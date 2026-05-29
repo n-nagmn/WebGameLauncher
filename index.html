@@ -2651,15 +2651,22 @@
 
             els.searchInput.addEventListener('input', renderGames);
 
+            let mousedownTarget = null;
+            window.addEventListener('mousedown', e => {
+                mousedownTarget = e.target;
+            });
+
             window.addEventListener('click', e => {
-                if (e.target === els.gameModal) closeGameModal();
-                if (e.target === els.settingsModal) closeSettings();
+                if (e.target === els.gameModal && mousedownTarget === els.gameModal) closeGameModal();
+                if (e.target === els.settingsModal && mousedownTarget === els.settingsModal) closeSettings();
                 // Close chat if clicked outside (and not on a chat element or open button)
                 const chatSidebar = document.getElementById('chat-sidebar');
                 if (chatSidebar.classList.contains('active') && 
                     !chatSidebar.contains(e.target) && 
                     !e.target.closest('.chat-btn')) {
-                    closeChat();
+                    if (mousedownTarget && !chatSidebar.contains(mousedownTarget) && !mousedownTarget.closest('.chat-btn')) {
+                        closeChat();
+                    }
                 }
             });
 
