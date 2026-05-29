@@ -1008,7 +1008,7 @@
             </div>
             <span class="header-info-text">|</span>
             <div class="settings-btn chat-btn" onclick="App.openChat()" title="チャット" tabindex="0" role="button" aria-label="チャット">💬</div>
-            <div class="settings-btn" onclick="App.openSettings()" title="設定 (S)" tabindex="0" role="button" aria-label="設定">⚙️</div>
+            <div class="settings-btn" onclick="App.openSettings()" title="設定" tabindex="0" role="button" aria-label="設定">⚙️</div>
         </div>
     </header>
 
@@ -2111,20 +2111,7 @@
         document.addEventListener('keydown', e => {
             if (els.gameModal.classList.contains('active') || els.settingsModal.classList.contains('active')) return;
 
-            if (e.key === 'n' || e.key === 'N') {
-                if (document.activeElement === els.searchInput) return;
-                e.preventDefault();
-                openGameModal();
-            }
-            if (e.key === 's' || e.key === 'S') {
-                if (document.activeElement === els.searchInput) return;
-                e.preventDefault();
-                openSettings();
-            }
-            if (e.key === '/') {
-                e.preventDefault();
-                els.searchInput.focus();
-            }
+
             if (e.key === 'Escape') {
                 els.searchInput.value = '';
                 els.searchInput.blur();
