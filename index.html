@@ -1397,6 +1397,12 @@
                 e.stopPropagation();
                 notif.classList.add('hiding');
                 setTimeout(() => notif.remove(), 300);
+                let dismissed = JSON.parse(localStorage.getItem('dismissedChatNotifs') || '[]');
+                if (!dismissed.includes(msg.id)) {
+                    dismissed.push(msg.id);
+                    if (dismissed.length > 200) dismissed = dismissed.slice(-200);
+                    localStorage.setItem('dismissedChatNotifs', JSON.stringify(dismissed));
+                }
                 if (msg.gameId) {
                     openChatGame(msg.gameId);
                 }
@@ -1537,6 +1543,14 @@
                             const newItems = newMessages.filter(m => !chatMessages.some(old => old.id === m.id) && m.clientId !== myClientId);
                             newItems.forEach(msg => {
                                 showChatNotification(msg);
+                            });
+                        } else {
+                            let dismissed = JSON.parse(localStorage.getItem('dismissedChatNotifs') || '[]');
+                            const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+                            newMessages.forEach(msg => {
+                                if (msg.clientId !== myClientId && !dismissed.includes(msg.id) && msg.timestamp > oneDayAgo) {
+                                    showChatNotification(msg);
+                                }
                             });
                         }
                         chatMessages = newMessages;
@@ -2843,6 +2857,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
