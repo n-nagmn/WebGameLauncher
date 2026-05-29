@@ -177,8 +177,9 @@
          * ======================================== */
         #toast-container {
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
+            top: auto;
             z-index: 1000;
             display: flex;
             flex-direction: column;
@@ -1409,6 +1410,17 @@
                 if (res.ok) {
                     const newMessages = await res.json();
                     if (JSON.stringify(newMessages) !== JSON.stringify(chatMessages)) {
+                        // Check for new messages from others
+                        if (chatMessages.length > 0) {
+                            const newItems = newMessages.filter(m => !chatMessages.some(old => old.timestamp === m.timestamp));
+                            newItems.forEach(msg => {
+                                // Don't notify if the user just sent it (optimistic update handles it)
+                                const savedName = localStorage.getItem('chat_name') || '名無し';
+                                if (msg.name !== savedName) {
+                                    showToast(`${msg.name}: ${msg.message}`, 'info', 5000);
+                                }
+                            });
+                        }
                         chatMessages = newMessages;
                         renderChat();
                     }
@@ -1523,6 +1535,7 @@
                     body: JSON.stringify({ name, message, gameId })
                 });
                 if (res.ok) {
+                    showToast('チャットを送信しました', 'success');
                     fetchChat();
                 } else {
                     showToast('チャット送信失敗', 'error');
