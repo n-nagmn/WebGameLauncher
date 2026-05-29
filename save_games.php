@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Web Game Launcher Pro - Game Data Save Endpoint (Fixed)
  */
@@ -214,7 +214,7 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
 
     $result = file_put_contents($file_path, $json_output);
     if ($result !== false) {
-        @chmod($file_path, 0644);
+        
         $response["status"] = "success";
         $response["message"] = "保存成功！";
         $response["count"] = count($validated);
@@ -236,3 +236,4 @@ if ($fp_lock) {
 }
 
 echo json_encode($response, JSON_UNESCAPED_UNICODE);
+
