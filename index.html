@@ -949,8 +949,6 @@
         .chat-message-game:hover { background: rgba(255,255,255,0.2); }
         .chat-message-text { word-break: break-word; line-height: 1.4; color: #eee; white-space: pre-wrap; user-select: text; }
         .aa-font { font-family: 'ＭＳ Ｐゴシック', 'MS PGothic', 'Textar', 'Mona', 'IPA モナー Pゴシック', 'Saitamaar', sans-serif !important; font-size: 16px !important; line-height: 18px !important; white-space: pre !important; word-wrap: normal !important; word-break: normal !important; letter-spacing: 0 !important; font-feature-settings: "palt" 0 !important; font-kerning: none !important; font-variant-east-asian: normal !important; text-spacing-trim: none !important; overflow-x: auto; padding-bottom: 4px; user-select: text !important; }
-        .chat-message-text.aa-font { zoom: 0.6; cursor: pointer; }
-        .chat-message-text.aa-font:active { zoom: 1.0; }
         .chat-input-area {
             padding: 16px;
             background: rgba(0,0,0,0.2);
@@ -1584,6 +1582,27 @@
             });
             container.innerHTML = html;
             
+            // AA Auto-scaling to fit within a defined box
+            requestAnimationFrame(() => {
+                container.querySelectorAll('.chat-message-text.aa-font').forEach(el => {
+                    // Reset zoom to measure original size
+                    el.style.zoom = 1;
+                    const parentW = el.parentElement.clientWidth;
+                    const maxW = parentW - 24; // Parent width minus padding
+                    const maxH = 250; // Defined box height
+
+                    const scaleW = maxW / el.scrollWidth;
+                    const scaleH = maxH / el.scrollHeight;
+
+                    // Scale down if it exceeds the width or height, but don't scale up past 1
+                    const scale = Math.min(1, scaleW, scaleH);
+                    
+                    if (scale < 1) {
+                        el.style.zoom = scale;
+                    }
+                });
+            });
+
             // Scroll to bottom
             setTimeout(() => {
                 container.scrollTop = container.scrollHeight;
