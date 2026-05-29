@@ -1731,8 +1731,15 @@
             const gameId = gameSelect.value ? parseInt(gameSelect.value, 10) : null;
             if (!message) return;
             
+            const isAa = message.toLowerCase().startsWith('/a');
+            
+            if (!isAa && message.length > 300) {
+                showToast("通常チャットの最大文字数は300文字です", "error");
+                return;
+            }
+            
             const lineCount = (message.match(/\n/g) || []).length + 1;
-            if (lineCount >= 5 && !message.toLowerCase().startsWith('/a')) {
+            if (lineCount >= 5 && !isAa) {
                 showToast("AA（アスキーアート）を送信する場合は先頭に /a を付けてください", "error");
                 msgInput.value = '';
                 msgInput.style.height = 'auto';

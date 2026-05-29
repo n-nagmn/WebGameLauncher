@@ -76,7 +76,15 @@ if ($name === '' || $message === '') {
 }
 
 $line_count = substr_count($message, "\n") + 1;
-if ($line_count >= 5 && stripos(trim($message), '/a') !== 0) {
+$is_aa = stripos(trim($message), '/a') === 0;
+
+if (!$is_aa && mb_strlen($message, 'UTF-8') > 300) {
+    $response["message"] = "通常チャットの最大文字数は300文字です。";
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($line_count >= 5 && !$is_aa) {
     $response["message"] = "複数行のAA（アスキーアート）を送信する場合は、メッセージの先頭に /a を付けてください。";
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
     exit;
