@@ -87,20 +87,30 @@ $new_message = [
 ];
 
 $existing_messages = [];
-if (file_exists($file_path)) {
-    $existing_raw = file_get_contents($file_path);
-    $existing_messages = json_decode($existing_raw, true) ?: [];
+$result = false;
+
+$fp = fopen($file_path, 'c+');
+if ($fp) {
+    if (flock($fp, LOCK_EX)) {
+        $raw = stream_get_contents($fp);
+        $existing_messages = json_decode($raw, true) ?: [];
+        
+        array_push($existing_messages, $new_message);
+        
+        // Keep only the last $max_messages
+        if (count($existing_messages) > $max_messages) {
+            $existing_messages = array_slice($existing_messages, -$max_messages);
+        }
+        
+        $json_output = json_encode($existing_messages, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, $json_output);
+        flock($fp, LOCK_UN);
+        $result = true;
+    }
+    fclose($fp);
 }
-
-array_push($existing_messages, $new_message);
-
-// Keep only the last $max_messages
-if (count($existing_messages) > $max_messages) {
-    $existing_messages = array_slice($existing_messages, -$max_messages);
-}
-
-$json_output = json_encode($existing_messages, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-$result = file_put_contents($file_path, $json_output, LOCK_EX);
 
 if ($result !== false) {
     @chmod($file_path, 0666);
