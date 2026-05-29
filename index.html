@@ -966,7 +966,7 @@
         .chat-input-area input:focus, .chat-input-area select:focus, .chat-input-area textarea:focus {
             border-color: var(--focus-color);
         }
-        .chat-input-area textarea { resize: none; }
+        .chat-input-area textarea { resize: none; overflow-y: hidden; max-height: 150px; }
         
         body.light-mode .chat-message-item { background: rgba(0,0,0,0.08); }
         body.light-mode .chat-message-name { color: #111; }
@@ -1369,7 +1369,7 @@
                     <span>${timeStr}</span>
                 </div>
                 ${gameHtml}
-                ${(() => { let msgText = msg.message; if (msgText.toLowerCase().startsWith('/aa')) { return `<div class="chat-notification-text aa-font">${escapeHtml(msgText.replace(/^\/aa[\s\r\n]*/i, ''))}</div>`; } return `<div class="chat-notification-text">${escapeHtml(msgText)}</div>`; })()}
+                ${(() => { let msgText = msg.message; if (msgText.toLowerCase().startsWith('/a')) { return `<div class="chat-notification-text aa-font">${escapeHtml(msgText.replace(/^\/a[\s\r\n]*/i, ''))}</div>`; } return `<div class="chat-notification-text">${escapeHtml(msgText)}</div>`; })()}
             `;
 
             notif.onclick = () => {
@@ -1566,7 +1566,7 @@
                             <button onclick="App.deleteChatMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>
                         </div>
                         ${gameHtml}
-                        ${(() => { let msgText = msg.message; if (msgText.toLowerCase().startsWith('/aa')) { return `<div class="chat-message-text aa-font">${escapeHtml(msgText.replace(/^\/aa[\s\r\n]*/i, ''))}</div>`; } return `<div class="chat-message-text">${escapeHtml(msgText)}</div>`; })()}
+                        ${(() => { let msgText = msg.message; if (msgText.toLowerCase().startsWith('/a')) { return `<div class="chat-message-text aa-font">${escapeHtml(msgText.replace(/^\/a[\s\r\n]*/i, ''))}</div>`; } return `<div class="chat-message-text">${escapeHtml(msgText)}</div>`; })()}
                     </div>
                 `;
             });
@@ -1638,6 +1638,7 @@
             renderChat();
             
             msgInput.value = '';
+            msgInput.style.height = 'auto';
             
             try {
                 const res = await fetch('./post_chat.php', {
@@ -2617,6 +2618,22 @@
 
         async function init() {
             els.grid = document.getElementById('game-grid');
+            const chatMsgInput = document.getElementById('chat-message');
+            if (chatMsgInput) {
+                chatMsgInput.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendChatMessage();
+                        chatMsgInput.style.height = 'auto';
+                    }
+                });
+                chatMsgInput.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    const newHeight = Math.min(this.scrollHeight, 150);
+                    this.style.height = newHeight + 'px';
+                    this.style.overflowY = this.scrollHeight > 150 ? 'auto' : 'hidden';
+                });
+            }
             els.gameModal = document.getElementById('game-modal');
             els.settingsModal = document.getElementById('settings-modal');
             els.searchInput = document.getElementById('search-input');
@@ -2679,13 +2696,6 @@
                     if (mousedownTarget && !chatSidebar.contains(mousedownTarget) && !mousedownTarget.closest('.chat-btn')) {
                         closeChat();
                     }
-                }
-            });
-
-            document.getElementById('chat-message')?.addEventListener('keydown', e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendChatMessage();
                 }
             });
 
@@ -2772,6 +2782,7 @@
     </script>
 </body>
 </html>
+
 
 
 
