@@ -2,3 +2,4 @@ games.json
 config.json
 backups/
 .rate_limit*
+chat.json

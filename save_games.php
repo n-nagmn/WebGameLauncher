@@ -92,6 +92,22 @@ if (count($decoded) > $max_games) {
     exit;
 }
 
+// --- Start of Active User Merge Logic ---
+$existing_games = [];
+if (file_exists($file_path)) {
+    $existing_raw = file_get_contents($file_path);
+    $existing_games = json_decode($existing_raw, true) ?: [];
+}
+// 既存のアクティブユーザー情報をIDをキーにしたマップにする
+$existing_active_map = [];
+foreach ($existing_games as $ex_game) {
+    if (isset($ex_game['id']) && isset($ex_game['activeUsers']) && is_array($ex_game['activeUsers'])) {
+        $existing_active_map[$ex_game['id']] = $ex_game['activeUsers'];
+    }
+}
+$one_hour_ago_ms = (time() - 3600) * 1000;
+// --- End of Active User Merge Logic ---
+
 // Validate each game entry
 $required_fields = ['id', 'name', 'url'];
 $validated = [];
@@ -110,21 +126,63 @@ foreach ($decoded as $index => $game) {
         }
     }
 
+    $game_id = is_int($game['id']) ? $game['id'] : intval($game['id']);
+    
+    // 既存のサーバー側データを取得
+    $server_game = isset($existing_active_map[$game_id]) ? null : null; // マップからはactiveUsersしか取れないので再検索
+    foreach ($existing_games as $ex_g) {
+        if ($ex_g['id'] == $game_id) {
+            $server_game = $ex_g;
+            break;
+        }
+    }
+
+    // タイムスタンプの比較（ミリ秒）
+    $client_updated_at = isset($game['updatedAt']) ? intval($game['updatedAt']) : 0;
+    $server_updated_at = $server_game && isset($server_game['updatedAt']) ? intval($server_game['updatedAt']) : 0;
+    
+    // クライアントが古い場合はサーバーのメタデータを優先する
+    $is_outdated = ($server_game && $client_updated_at < $server_updated_at);
+
+    // アクティブユーザーのマージ処理
+    $new_active = isset($game['activeUsers']) && is_array($game['activeUsers']) ? $game['activeUsers'] : [];
+    $merged_active = $new_active;
+    
+    if ($server_game && isset($server_game['activeUsers']) && is_array($server_game['activeUsers'])) {
+        foreach ($server_game['activeUsers'] as $uid => $ts) {
+            if (!isset($merged_active[$uid]) || $ts > $merged_active[$uid]) {
+                $merged_active[$uid] = $ts;
+            }
+        }
+    }
+    
+    // ついでにサーバー側でも1時間以上前の古いデータを掃除
+    $merged_active = array_filter($merged_active, function($ts) use ($one_hour_ago_ms) {
+        return $ts > $one_hour_ago_ms;
+    });
+
+    // lastPlayedは常に新しい方を採用
+    $client_last_played = isset($game['lastPlayed']) ? intval($game['lastPlayed']) : 0;
+    $server_last_played = $server_game && isset($server_game['lastPlayed']) ? intval($server_game['lastPlayed']) : 0;
+    $merged_last_played = max($client_last_played, $server_last_played);
+
     $validated[] = [
-        'id' => is_int($game['id']) ? $game['id'] : intval($game['id']),
-        'name' => htmlspecialchars(mb_substr(trim($game['name']), 0, 100), ENT_QUOTES, 'UTF-8'),
-        'url' => filter_var(trim($game['url']), FILTER_VALIDATE_URL) ?: '',
-        'image' => isset($game['image']) ? htmlspecialchars(trim($game['image']), ENT_QUOTES, 'UTF-8') : '',    
-        'category' => isset($game['category']) ? htmlspecialchars(mb_substr(trim($game['category']), 0, 50), ENT_QUOTES, 'UTF-8') : '',
-        'playersMin' => isset($game['playersMin']) ? max(1, intval($game['playersMin'])) : 0,
-        'playersMax' => isset($game['playersMax']) ? max(1, intval($game['playersMax'])) : 0,
-        'createdAt' => isset($game['createdAt']) ? intval($game['createdAt']) : time(),
-        'updatedAt' => isset($game['updatedAt']) ? intval($game['updatedAt']) : time(),
-        'lastPlayed' => isset($game['lastPlayed']) ? intval($game['lastPlayed']) : 0,
-        'hasUpdate' => isset($game['hasUpdate']) ? filter_var($game['hasUpdate'], FILTER_VALIDATE_BOOLEAN) : false,
-        'remoteUpdatedAt' => isset($game['remoteUpdatedAt']) ? intval($game['remoteUpdatedAt']) : 0,
-        'lastHash' => isset($game['lastHash']) ? htmlspecialchars(trim($game['lastHash']), ENT_QUOTES, 'UTF-8') : '',
-        'isPinned' => isset($game['isPinned']) ? filter_var($game['isPinned'], FILTER_VALIDATE_BOOLEAN) : false
+        'id' => $game_id,
+        'name' => $is_outdated ? $server_game['name'] : htmlspecialchars(mb_substr(trim($game['name']), 0, 100), ENT_QUOTES, 'UTF-8'),
+        'url' => $is_outdated ? $server_game['url'] : (filter_var(trim($game['url']), FILTER_VALIDATE_URL) ?: ''),
+        'image' => $is_outdated ? $server_game['image'] : (isset($game['image']) ? htmlspecialchars(trim($game['image']), ENT_QUOTES, 'UTF-8') : ''),    
+        'category' => $is_outdated ? $server_game['category'] : (isset($game['category']) ? htmlspecialchars(mb_substr(trim($game['category']), 0, 50), ENT_QUOTES, 'UTF-8') : ''),
+        'playersMin' => $is_outdated ? $server_game['playersMin'] : (isset($game['playersMin']) ? max(0, intval($game['playersMin'])) : 0),
+        'playersMax' => $is_outdated ? $server_game['playersMax'] : (isset($game['playersMax']) ? max(0, intval($game['playersMax'])) : 0),
+        'createdAt' => $is_outdated ? $server_game['createdAt'] : (isset($game['createdAt']) ? intval($game['createdAt']) : time() * 1000),
+        'updatedAt' => max($client_updated_at, $server_updated_at, time() * 1000),
+        'lastPlayed' => $merged_last_played,
+        'hasUpdate' => $is_outdated ? $server_game['hasUpdate'] : (isset($game['hasUpdate']) ? filter_var($game['hasUpdate'], FILTER_VALIDATE_BOOLEAN) : false),
+        'remoteUpdatedAt' => $is_outdated ? $server_game['remoteUpdatedAt'] : (isset($game['remoteUpdatedAt']) ? intval($game['remoteUpdatedAt']) : 0),
+        'lastHash' => $is_outdated ? $server_game['lastHash'] : (isset($game['lastHash']) ? htmlspecialchars(trim($game['lastHash']), ENT_QUOTES, 'UTF-8') : ''),
+        'isPinned' => $is_outdated ? $server_game['isPinned'] : (isset($game['isPinned']) ? filter_var($game['isPinned'], FILTER_VALIDATE_BOOLEAN) : false),
+        'playCount' => isset($game['playCount']) ? intval($game['playCount']) : ($server_game && isset($server_game['playCount']) ? intval($server_game['playCount']) : 0),
+        'activeUsers' => $merged_active
     ];
 }
 

@@ -25,9 +25,133 @@
             --grid-gap: 20px;
             --card-radius: 8px;
             --header-height: 70px;
-            --footer-height: 50px;
             --transition-fast: 0.15s;
             --transition-normal: 0.25s;
+        }
+
+        /* Light Mode Overrides */
+        body.light-mode {
+            --bg-color: #e0e0e5;
+            --text-color: #1d1d1f;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --modal-content-bg: #f9f9f9;
+            --modal-bg: rgba(0, 0, 0, 0.2);
+        }
+
+        body.light-mode .game-card {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            background-color: var(--card-bg);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        body.light-mode .title-bar {
+            background: linear-gradient(to top, rgba(255,255,255,0.95), rgba(255,255,255,0.8));
+            color: #1d1d1f;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        body.light-mode .card-category {
+            background: rgba(255,255,255,0.5);
+            color: #666;
+            border-top: 1px solid rgba(0,0,0,0.03);
+        }
+
+        body.light-mode .category-chip, 
+        body.light-mode .player-chip {
+            background: rgba(0,0,0,0.05);
+            border-color: rgba(0,0,0,0.1);
+            color: #333;
+        }
+
+        body.light-mode .search-container {
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        body.light-mode .search-container input { color: #333; }
+        body.light-mode .search-container input::placeholder { color: #999; }
+        
+        body.light-mode .modal-content {
+            color: #1d1d1f;
+            border-color: rgba(0,0,0,0.1);
+            box-shadow: 0 25px 80px rgba(0,0,0,0.2);
+        }
+        body.light-mode .form-group label { color: #222; font-weight: 600; }
+        body.light-mode .form-group input, 
+        body.light-mode .form-group select {
+            background: #fff;
+            color: #111;
+            border-color: #ccc;
+        }
+        body.light-mode .setting-group {
+            background: rgba(0,0,0,0.04);
+            border-color: rgba(0,0,0,0.08);
+        }
+        body.light-mode .form-group-checkbox { color: #111; font-weight: 500; }
+        body.light-mode .btn-cancel { background: #e0e0e0; color: #222; }
+        body.light-mode h3 { color: #000; font-weight: 800; border-bottom-color: rgba(0,0,0,0.2); }
+        body.light-mode .header-info-text { color: #ccc; }
+        body.light-mode .category-manage-chip { background: #f0f0f0; border-color: #ddd; color: #333; }
+
+        body.light-mode header {
+            background: linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, transparent 100%);
+        }
+
+        body.light-mode .player-badge {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border-color: rgba(0,0,0,0.1);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        body.light-mode .active-badge {
+            background: #bbdefb;
+            color: #0d47a1;
+            border: 1px solid rgba(13, 71, 161, 0.2);
+        }
+
+        body.light-mode .sub-section {
+            border-top-color: rgba(0,0,0,0.15);
+        }
+        
+        body.light-mode .sub-section h4 {
+            color: #000;
+            font-weight: 800;
+        }
+
+        body.light-mode .sub-section p {
+            color: #222;
+            font-weight: 500;
+        }
+
+        body.light-mode .btn-outline {
+            border-color: rgba(0,0,0,0.2);
+            color: #333;
+        }
+        body.light-mode .btn-outline:hover {
+            background: rgba(0,0,0,0.05);
+            border-color: rgba(0,0,0,0.4);
+        }
+
+        body.light-mode .toast {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border-left-width: 5px;
+        }
+
+        body.light-mode .category-chip.active,
+        body.light-mode .player-chip.active {
+            background: var(--focus-color);
+            color: #000;
+            border-color: rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(var(--focus-color-rgb), 0.4);
+        }
+
+        /* Active chips for both modes (vibrancy boost) */
+        .category-chip.active,
+        .player-chip.active {
+            box-shadow: 0 0 15px rgba(var(--focus-color-rgb), 0.3);
+            transform: translateY(-1px);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
@@ -129,7 +253,7 @@
             max-width: 100%;
             flex-wrap: nowrap;
             min-width: 0;
-            padding: 4px 0;
+            padding: 8px 0;
         }
         .category-filter::-webkit-scrollbar { display: none; }
 
@@ -141,6 +265,8 @@
             max-width: 100%;
             border-left: 1px solid rgba(255,255,255,0.1);
             padding-left: 16px;
+            padding-top: 8px;
+            padding-bottom: 8px;
             margin-left: 8px;
             flex-wrap: nowrap;
             min-width: 0;
@@ -364,6 +490,29 @@
         .card-badge.new { background: var(--focus-color); color: #000; }
         .card-badge.pinned-badge { background: var(--pin-color); color: #000; }
 
+        .active-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #ADD8E6;
+            color: #000;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            z-index: 15;
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+            transition: opacity 0.2s;
+            text-align: right;
+            line-height: 1.2;
+        }
+
+        .game-card:hover .active-badge,
+        .game-card.focused .active-badge {
+            opacity: 0;
+        }
+
         .title-bar {
             background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.6));
             padding: 10px 12px;
@@ -466,35 +615,6 @@
         .empty-state-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
         .empty-state-text { font-size: 18px; margin-bottom: 8px; }
         .empty-state-hint { font-size: 14px; color: #555; }
-
-        /* ========================================
-         * Footer
-         * ======================================== */
-        footer {
-            height: var(--footer-height);
-            border-top: 1px solid rgba(255,255,255,0.06);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 40px;
-            font-size: 12px;
-            color: #888;
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 100%);
-            backdrop-filter: blur(10px);
-            flex-shrink: 0;
-        }
-        .footer-left { display: flex; gap: 24px; }
-        .footer-btn { display: flex; align-items: center; gap: 6px; }
-        .key-icon {
-            background: rgba(255,255,255,0.1);
-            color: #ccc;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 11px;
-            font-family: monospace;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
 
         /* ========================================
          * Modals
@@ -718,6 +838,99 @@
             transform: scale(1.2);
         }
 
+        /* ========================================
+         * Chat Sidebar
+         * ======================================== */
+        .chat-sidebar {
+            position: fixed;
+            top: 0;
+            right: -360px;
+            width: 340px;
+            height: 100vh;
+            background: var(--modal-content-bg);
+            box-shadow: -5px 0 25px rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-left: 1px solid rgba(255,255,255,0.05);
+        }
+        .chat-sidebar.active { right: 0; }
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .chat-header h3 { margin: 0; font-size: 16px; border: none; padding: 0; display: flex; align-items: center; gap: 8px;}
+        .chat-close-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+        }
+        .chat-close-btn:hover { color: white; }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-messages::-webkit-scrollbar { width: 6px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+        .chat-message-item {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 13px;
+        }
+        .chat-message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 11px;
+            color: #aaa;
+        }
+        .chat-message-name { font-weight: bold; color: var(--focus-color); }
+        .chat-message-game { display: inline-block; background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s;}
+        .chat-message-game:hover { background: rgba(255,255,255,0.2); }
+        .chat-message-text { word-break: break-word; line-height: 1.4; color: #eee; white-space: pre-wrap; }
+        .chat-input-area {
+            padding: 16px;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .chat-input-area input, .chat-input-area select, .chat-input-area textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .chat-input-area input:focus, .chat-input-area select:focus, .chat-input-area textarea:focus {
+            border-color: var(--focus-color);
+        }
+        .chat-input-area textarea { resize: none; }
+        
+        body.light-mode .chat-message-item { background: rgba(0,0,0,0.05); }
+        body.light-mode .chat-message-text { color: #333; }
+        body.light-mode .chat-input-area { background: rgba(0,0,0,0.03); }
+        body.light-mode .chat-input-area input, body.light-mode .chat-input-area select, body.light-mode .chat-input-area textarea {
+            background: #fff; color: #111; border-color: #ccc;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             header { padding: 0 20px; }
@@ -727,6 +940,7 @@
             .search-container input:focus { width: 150px; }
             footer { padding: 0 20px; font-size: 11px; }
             .modal-content { padding: 24px; }
+            .chat-sidebar { width: 100%; right: -100%; }
         }
     </style>
 </head>
@@ -736,7 +950,7 @@
 
     <header>
         <div class="header-left">
-            <div class="logo">Web Game Launcher</div>
+            <div id="ranking-toggle-container"></div>
             <div class="category-filter" id="category-filter"></div>
             <div class="player-filter" id="player-filter"></div>
         </div>
@@ -746,6 +960,7 @@
                 <input type="text" id="search-input" placeholder="検索..." autocomplete="off">
             </div>
             <span class="header-info-text">|</span>
+            <div class="settings-btn" onclick="App.openChat()" title="募集・チャット" tabindex="0" role="button" aria-label="チャット">💬</div>
             <div class="settings-btn" onclick="App.openSettings()" title="設定 (S)" tabindex="0" role="button" aria-label="設定">⚙️</div>
         </div>
     </header>
@@ -753,15 +968,6 @@
     <main id="main-content">
         <div class="grid-container" id="game-grid"></div>
     </main>
-
-    <footer>
-        <div class="footer-left">
-            <div class="footer-btn"><span class="key-icon">Enter</span> 起動</div>
-            <div class="footer-btn"><span class="key-icon">←↑→↓</span> 移動</div>
-            <div class="footer-btn"><span class="key-icon">Drag</span> 並び替え</div>
-        </div>
-        <div class="footer-btn"><span class="key-icon">Del</span> 削除</div>
-    </footer>
 
     <div class="modal" id="game-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal-content">
@@ -916,6 +1122,10 @@
                     <input type="checkbox" id="setting-local-backup">
                     <span>ブラウザにローカルバックアップを作成する</span>
                 </label>
+                <label class="form-group-checkbox">
+                    <input type="checkbox" id="setting-light-mode">
+                    <span>ライトモードを使用する</span>
+                </label>
             </div>
 
             <h3 class="global-setting">全体設定</h3>
@@ -951,6 +1161,25 @@
         </div>
     </div>
 
+    <!-- Chat Sidebar -->
+    <div id="chat-sidebar" class="chat-sidebar">
+        <div class="chat-header">
+            <h3>💬 募集・チャット</h3>
+            <button class="chat-close-btn" onclick="App.closeChat()" title="閉じる">×</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will be rendered here -->
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-name" placeholder="名前 (省略可)">
+            <select id="chat-game-select">
+                <option value="">ゲーム指定なし</option>
+            </select>
+            <textarea id="chat-message" placeholder="メッセージを入力... (Enterで送信)" rows="2"></textarea>
+            <button class="btn-save" style="width: 100%; justify-content: center;" onclick="App.sendChatMessage()">送信</button>
+        </div>
+    </div>
+
     <script>
     /**
      * ========================================
@@ -975,7 +1204,8 @@
             showTitle: true,
             openInNewTab: true,
             enableAnimations: true,
-            localBackup: true
+            localBackup: true,
+            isLightMode: false
         };
 
         const CATEGORY_LABELS = {
@@ -994,13 +1224,26 @@
         let categoryDragStartIndex = null;
         let focusedCardIndex = -1;
         let currentCategory = 'all';
+        let isRankingActive = false;
         let serverTimestamps = null;
         let isSaving = false;
+        
+        let chatMessages = [];
+        let chatPollInterval = null;
 
         // --- DOM Elements ---
         const els = {};
 
         // --- Utilities ---
+
+        function getUniqueUserId() {
+            let userId = localStorage.getItem('launcher_user_id');
+            if (!userId) {
+                userId = 'u_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('launcher_user_id', userId);
+            }
+            return userId;
+        }
 
         function escapeHtml(str) {
             if (typeof str !== 'string') return '';
@@ -1130,6 +1373,143 @@
             }
         }
 
+        // --- Chat Functionality ---
+
+        async function fetchChat() {
+            try {
+                const res = await fetch('./chat.json?t=' + Date.now());
+                if (res.ok) {
+                    const newMessages = await res.json();
+                    if (JSON.stringify(newMessages) !== JSON.stringify(chatMessages)) {
+                        chatMessages = newMessages;
+                        renderChat();
+                    }
+                }
+            } catch (e) {
+                // Silently fail if chat not ready
+            }
+        }
+
+        function renderChat() {
+            const container = document.getElementById('chat-messages');
+            if (!container) return;
+            
+            if (chatMessages.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #888; font-size: 13px; margin-top: 20px;">まだメッセージはありません<br>一緒に遊ぶ人を募集してみましょう！</div>';
+                return;
+            }
+
+            let html = '';
+            chatMessages.forEach(msg => {
+                const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const name = msg.name || '名無し';
+                let gameHtml = '';
+                if (msg.gameId) {
+                    const game = games.find(g => g.id === msg.gameId);
+                    if (game) {
+                        gameHtml = `<div class="chat-message-game" onclick="App.openChatGame(${game.id})">🎮 ${escapeHtml(game.name)}</div>`;
+                    }
+                }
+                
+                html += `
+                    <div class="chat-message-item">
+                        <div class="chat-message-header">
+                            <span class="chat-message-name">${escapeHtml(name)}</span>
+                            <span>${timeStr}</span>
+                        </div>
+                        ${gameHtml}
+                        <div class="chat-message-text">${escapeHtml(msg.message)}</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            
+            // Scroll to bottom
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 10);
+        }
+
+        function openChat() {
+            document.getElementById('chat-sidebar').classList.add('active');
+            
+            // Populate game select
+            const select = document.getElementById('chat-game-select');
+            let options = '<option value="">ゲーム指定なし</option>';
+            games.forEach(g => {
+                options += `<option value="${g.id}">${escapeHtml(g.name)}</option>`;
+            });
+            select.innerHTML = options;
+            
+            // Restore name
+            const savedName = localStorage.getItem('chat_name');
+            if (savedName) document.getElementById('chat-name').value = savedName;
+
+            fetchChat();
+            if (!chatPollInterval) {
+                chatPollInterval = setInterval(fetchChat, 5000);
+            }
+        }
+
+        function closeChat() {
+            document.getElementById('chat-sidebar').classList.remove('active');
+            if (chatPollInterval) {
+                clearInterval(chatPollInterval);
+                chatPollInterval = null;
+            }
+        }
+
+        async function sendChatMessage() {
+            const nameInput = document.getElementById('chat-name');
+            const msgInput = document.getElementById('chat-message');
+            const gameSelect = document.getElementById('chat-game-select');
+            
+            let name = nameInput.value.trim() || '名無し';
+            const message = msgInput.value.trim();
+            const gameId = gameSelect.value ? parseInt(gameSelect.value, 10) : null;
+            
+            if (!message) return;
+            
+            localStorage.setItem('chat_name', name);
+            
+            // Optimistic update
+            const tempMsg = {
+                id: 'temp_' + Date.now(),
+                name: name,
+                message: message,
+                gameId: gameId,
+                timestamp: Date.now()
+            };
+            chatMessages.push(tempMsg);
+            renderChat();
+            
+            msgInput.value = '';
+            
+            try {
+                const res = await fetch('./post_chat.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, message, gameId })
+                });
+                if (res.ok) {
+                    fetchChat();
+                } else {
+                    showToast('チャット送信失敗', 'error');
+                }
+            } catch (e) {
+                showToast('通信エラー', 'error');
+            }
+        }
+
+        function openChatGame(id) {
+            const game = games.find(g => g.id === id);
+            if (game) {
+                if (confirm(`「${game.name}」を起動しますか？`)) {
+                    launchGame(game);
+                }
+            }
+        }
+
         // --- Rendering ---
 
         function renderFilters() {
@@ -1168,6 +1548,16 @@
             });
             catContainer.innerHTML = catHtml;
 
+            // Ranking Toggle (Separate from categories)
+            const rankingContainer = document.getElementById('ranking-toggle-container');
+            if (rankingContainer) {
+                rankingContainer.innerHTML = `
+                    <div class="category-chip ${isRankingActive ? 'active' : ''}" onclick="App.toggleRanking()" style="margin-left: 0; margin-right: 12px; border-color: rgba(255, 215, 0, 0.4);">
+                        🏆 ランキング
+                    </div>
+                `;
+            }
+
             // Player filter
             const playerContainer = document.getElementById('player-filter');
             let playerHtml = `<div class="player-chip ${currentPlayerFilter === 'all' ? 'active' : ''}" data-players="all" onclick="App.setPlayerFilter('all')">全人数</div>`;
@@ -1193,7 +1583,6 @@
 
             const searchTerm = els.searchInput.value.toLowerCase().trim();
             
-            // 並び替えは行わず、配列の順序を尊重する
             filteredGames = games.filter(game => {
                 const matchesSearch = !searchTerm || game.name.toLowerCase().includes(searchTerm);
                 const matchesCategory = currentCategory === 'all' || game.category === currentCategory;
@@ -1220,6 +1609,18 @@
 
                 return matchesSearch && matchesCategory && matchesPlayers;
             });
+
+            if (isRankingActive) {
+                // ランキング有効時はプレイ回数順（降順）
+                filteredGames.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
+            } else {
+                // 通常時はピン留めを最優先
+                filteredGames.sort((a, b) => {
+                    if (a.isPinned && !b.isPinned) return -1;
+                    if (!a.isPinned && b.isPinned) return 1;
+                    return 0;
+                });
+            }
 
             if (filteredGames.length === 0 && games.length > 0) {
                 grid.innerHTML = `
@@ -1280,6 +1681,30 @@
                     badge = '<span class="card-badge new">NEW</span>';
                 }
                 
+                // --- Active Badge Logic ---
+                const now = Date.now();
+                const lastPlayed = game.lastPlayed || 0;
+                const diffMs = now - lastPlayed;
+                let activeBadge = '';
+                if (lastPlayed > 0 && diffMs < 3600000) {
+                    const diffMins = Math.floor(diffMs / 60000);
+                    
+                    // ユニークユーザー数のカウント（過去1時間以内）
+                    let activeUserCount = 0;
+                    if (game.activeUsers) {
+                        const oneHourAgo = now - 3600000;
+                        activeUserCount = Object.values(game.activeUsers).filter(ts => ts > oneHourAgo).length;
+                    }
+                    // もしアクティブユーザーがいない（データ不整合など）場合は最低1人とする
+                    if (activeUserCount === 0) activeUserCount = 1;
+
+                    activeBadge = `
+                        <span class="active-badge">
+                            ${diffMins}分前アクティブ<br>
+                            <span style="font-size: 9px; opacity: 0.8;">(${activeUserCount}人)</span>
+                        </span>`;
+                }
+
                 const catLabel = game.category ? (CATEGORY_LABELS[game.category] || game.category) : '';
                 const catHtml = catLabel ? `<div class="card-category">${escapeHtml(catLabel)}</div>` : '';
 
@@ -1310,6 +1735,7 @@
 
                 card.innerHTML = `
                     ${badge}
+                    ${activeBadge}
                     ${playerBadge}
                     <button class="pin-btn" title="${game.isPinned ? '固定を解除' : '位置を固定'}" onclick="App.togglePin(${game.id}, event)">${game.isPinned ? '✖️' : '📌'}</button>
                     <button class="edit-btn" title="編集" onclick="App.openGameModal(${game.id}, event)" aria-label="${escapeHtml(game.name)}を編集">✎</button>
@@ -1348,6 +1774,7 @@
             const index = games.findIndex(g => g.id === id);
             if (index !== -1) {
                 games[index].isPinned = !games[index].isPinned;
+                games[index].updatedAt = Date.now();
                 showToast(games[index].isPinned ? 'ピン留めしました' : 'ピン留めを解除しました', 'success');
                 renderGames();
                 saveGamesToServer();
@@ -1403,6 +1830,22 @@
             readHistory[game.id] = Date.now();
             localStorage.setItem('gameReadHistory', JSON.stringify(readHistory));
 
+            // プレイ回数をインクリメント
+            game.playCount = (game.playCount || 0) + 1;
+
+            // アクティブユーザー情報を更新（ユニークIDを使用）
+            const userId = getUniqueUserId();
+            if (!game.activeUsers || Array.isArray(game.activeUsers)) game.activeUsers = {}; 
+            game.activeUsers[userId] = Date.now();
+
+            // 1時間以上前の古いユーザーデータを削除して肥大化を防ぐ
+            const oneHourAgo = Date.now() - 3600000;
+            for (const id in game.activeUsers) {
+                if (game.activeUsers[id] < oneHourAgo) {
+                    delete game.activeUsers[id];
+                }
+            }
+
             // ピン留めされていない場合のみ、先頭（ピン留めの下）に移動
             if (!game.isPinned) {
                 const globalIndex = games.findIndex(g => g.id === game.id);
@@ -1431,7 +1874,11 @@
         }
 
         function setCategory(cat) {
-            currentCategory = cat;
+            if (currentCategory === cat) {
+                currentCategory = 'all';
+            } else {
+                currentCategory = cat;
+            }
             renderGames();
         }
 
@@ -1788,6 +2235,7 @@
             document.getElementById('setting-new-tab').checked = localConfig.openInNewTab ?? true;
             document.getElementById('setting-animations').checked = localConfig.enableAnimations ?? true;
             document.getElementById('setting-local-backup').checked = localConfig.localBackup ?? true;
+            document.getElementById('setting-light-mode').checked = localConfig.isLightMode ?? false;
 
             // Server Config
             document.getElementById('setting-bg-image').value = serverConfig.bgImage || '';
@@ -1811,7 +2259,8 @@
                 showTitle: document.getElementById('setting-show-title').checked,
                 openInNewTab: document.getElementById('setting-new-tab').checked,
                 enableAnimations: document.getElementById('setting-animations').checked,
-                localBackup: document.getElementById('setting-local-backup').checked
+                localBackup: document.getElementById('setting-local-backup').checked,
+                isLightMode: document.getElementById('setting-light-mode').checked
             };
             localStorage.setItem('launcher_local_config', JSON.stringify(localConfig));
 
@@ -1837,6 +2286,7 @@
             root.style.setProperty('--grid-gap', localConfig.cardGap);
             root.style.setProperty('--hover-scale', localConfig.enableAnimations ? '1.04' : '1.0');
             document.body.classList.toggle('hide-titles', !localConfig.showTitle);
+            document.body.classList.toggle('light-mode', localConfig.isLightMode === true);
             
             // Apply Server Config
             document.body.style.backgroundImage = serverConfig.bgImage ? `url('${serverConfig.bgImage}')` : 'none';
@@ -1951,6 +2401,20 @@
             window.addEventListener('click', e => {
                 if (e.target === els.gameModal) closeGameModal();
                 if (e.target === els.settingsModal) closeSettings();
+                // Close chat if clicked outside (and not on a chat element or open button)
+                const chatSidebar = document.getElementById('chat-sidebar');
+                if (chatSidebar.classList.contains('active') && 
+                    !chatSidebar.contains(e.target) && 
+                    !e.target.closest('[onclick="App.openChat()"]')) {
+                    closeChat();
+                }
+            });
+
+            document.getElementById('chat-message')?.addEventListener('keydown', e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendChatMessage();
+                }
             });
 
             startAutoReload();
@@ -1981,6 +2445,11 @@
                     }
                 } catch(e) {}
             }, 3000);
+
+            // 1分ごとに表示を更新して「何分前アクティブ」の時間を最新に保つ
+            setInterval(() => {
+                renderGames();
+            }, 60000);
         }
 
         function handleCategoryChange(select) {
@@ -1994,12 +2463,18 @@
             }
         }
 
+        function toggleRanking() {
+            isRankingActive = !isRankingActive;
+            renderGames();
+        }
+
         return {
             init,
             openGameModal, closeGameModal, saveGame, deleteGame, deleteCategory,
             openSettings, closeSettings, saveSettings, exportData, importData,
-            setCategory, setPlayerFilter, handleCategoryChange, togglePin,
-            handleCategoryDragStart, handleCategoryDragOver, handleCategoryDrop, handleCategoryDragEnd
+            setCategory, setPlayerFilter, handleCategoryChange, togglePin, toggleRanking,
+            handleCategoryDragStart, handleCategoryDragOver, handleCategoryDrop, handleCategoryDragEnd,
+            openChat, closeChat, sendChatMessage, openChatGame
         };
     })();
 
