@@ -218,6 +218,10 @@
             flex-direction: column;
             gap: 10px;
             pointer-events: none;
+            transition: right var(--transition-normal);
+        }
+        body.chat-open #chat-notification-container {
+            right: 370px;
         }
         .chat-notification {
             background: rgba(30, 30, 30, 0.95);
@@ -1543,6 +1547,7 @@
         }
 
         function openChat() {
+            document.body.classList.add('chat-open');
             document.getElementById('chat-sidebar').classList.add('active');
             
             // Populate game select
@@ -1560,6 +1565,7 @@
         }
 
         function closeChat() {
+            document.body.classList.remove('chat-open');
             document.getElementById('chat-sidebar').classList.remove('active');
         }
 
