@@ -75,6 +75,13 @@ if ($name === '' || $message === '') {
     exit;
 }
 
+$line_count = substr_count($message, "\n") + 1;
+if ($line_count >= 5 && stripos(trim($message), '/a') !== 0) {
+    $response["message"] = "複数行のAA（アスキーアート）を送信する場合は、メッセージの先頭に /a を付けてください。";
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 $clientId = isset($decoded['clientId']) ? trim($decoded['clientId']) : null;
 
 $new_message = [
