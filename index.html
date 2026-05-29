@@ -1400,11 +1400,13 @@
 
                     const scaleW = maxW / aaText.scrollWidth;
                     const scaleH = maxH / aaText.scrollHeight;
-                    const scale = Math.min(1, scaleW, scaleH);
+                    // Add 2% safety margin to prevent rounding error scrollbars
+                    const scale = Math.min(1, scaleW, scaleH) * 0.98;
 
                     if (scale < 1) {
                         aaText.style.zoom = scale;
-                        notif.style.overflow = 'hidden'; // Hide scrollbars since we scaled it to fit
+                        aaText.style.overflow = 'hidden'; // Hide internal scrollbar
+                        notif.style.overflow = 'hidden'; // Hide container scrollbar
                     }
                 }
                 notif.classList.add('show');
@@ -1614,11 +1616,12 @@
                     const scaleW = maxW / el.scrollWidth;
                     const scaleH = maxH / el.scrollHeight;
 
-                    // Scale down if it exceeds the width or height, but don't scale up past 1
-                    const scale = Math.min(1, scaleW, scaleH);
+                    // Scale down with a 2% safety margin to prevent 1px scrollbars
+                    const scale = Math.min(1, scaleW, scaleH) * 0.98;
                     
                     if (scale < 1) {
                         el.style.zoom = scale;
+                        el.style.overflow = 'hidden';
                     }
                 });
             });
