@@ -1654,9 +1654,7 @@
         function openChatGame(id) {
             const game = games.find(g => g.id === id);
             if (game) {
-                if (confirm(`「${game.name}」を起動しますか？`)) {
-                    launchGame(game);
-                }
+                launchGame(game);
             }
         }
 
@@ -2297,7 +2295,7 @@
 
         function deleteGame(id) {
             const game = games.find(g => g.id === id);
-            if (confirm(`「${game.name}」を完全に削除しますか？この操作は取り消せません。`)) {
+            if (game) {
                 games = games.filter(g => g.id !== id);
                 renderGames();
                 closeGameModal();
@@ -2331,10 +2329,7 @@
 
         function deleteCategory(cat) {
             const label = CATEGORY_LABELS[cat] || cat;
-            if (!confirm(`カテゴリー「${label}」を削除しますか？\n※対象のゲームは「未分類」になります。`)) {
-                return;
-            }
-
+            
             let isUpdated = false;
             games = games.map(g => {
                 if (g.category === cat) {
@@ -2479,7 +2474,6 @@
             reader.onload = function(e) {
                 try {
                     const imported = JSON.parse(e.target.result);
-                    if (!confirm("既存のデータと設定が上書きされます。続行しますか？")) return;
 
                     if (Array.isArray(imported)) {
                         games = imported.map(g => ({ ...g, createdAt: g.createdAt || Date.now() }));
@@ -2569,9 +2563,6 @@
                 showToast('復元するバックアップを選択してください', 'warning');
                 return;
             }
-            if (!confirm(`バックアップ「${filename}」から復元しますか？\n現在のデータは上書きされます。`)) {
-                return;
-            }
             try {
                 const res = await fetch('./manage_backups.php', {
                     method: 'POST',
@@ -2595,9 +2586,6 @@
             const filename = select.value;
             if (!filename) {
                 showToast('削除するバックアップを選択してください', 'warning');
-                return;
-            }
-            if (!confirm(`バックアップ「${filename}」を削除しますか？\nこの操作は元に戻せません。`)) {
                 return;
             }
             try {
