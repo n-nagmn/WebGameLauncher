@@ -1606,13 +1606,16 @@
             const msgInput = document.getElementById('chat-message');
             const gameSelect = document.getElementById('chat-game-select');
             
-            let name = nameInput.value.trim() || '名無し';
+            let inputName = nameInput.value.trim();
             const message = msgInput.value.trim();
             const gameId = gameSelect.value ? parseInt(gameSelect.value, 10) : null;
-            
             if (!message) return;
-            
-            localStorage.setItem('chat_name', name);
+            if (inputName && inputName !== '名無し') {
+                localStorage.setItem('chat_name', inputName);
+            } else {
+                localStorage.removeItem('chat_name');
+            }
+            let name = inputName || '名無し';
             
             // Optimistic update
             const tempMsg = {
@@ -2760,4 +2763,5 @@
     </script>
 </body>
 </html>
+
 
