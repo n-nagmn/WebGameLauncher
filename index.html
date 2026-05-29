@@ -1398,27 +1398,8 @@
 
             container.prepend(notif);
             
-            // Auto-scale AA to prevent scrollbars in notification
-            requestAnimationFrame(() => {
-                const aaText = notif.querySelector('.chat-notification-text.aa-font');
-                if (aaText) {
-                    aaText.style.zoom = 1;
-                    const maxW = 800 - 32; // 800px max-width minus 32px padding
-                    const maxH = window.innerHeight * 0.8 - 60; // 80vh max-height minus header/padding
-
-                    const scaleW = maxW / aaText.scrollWidth;
-                    const scaleH = maxH / aaText.scrollHeight;
-                    // Add 2% safety margin to prevent rounding error scrollbars
-                    const scale = Math.min(1, scaleW, scaleH) * 0.98;
-
-                    if (scale < 1) {
-                        aaText.style.zoom = scale;
-                        aaText.style.overflow = 'hidden'; // Hide internal scrollbar
-                        notif.style.overflow = 'hidden'; // Hide container scrollbar
-                    }
-                }
-                notif.classList.add('show');
-            });
+            // Ensure notification can scroll if it's too large
+            setTimeout(() => notif.classList.add('show'), 10);
 
             const timePassed = Date.now() - msg.timestamp;
             const timeRemaining = 900000 - timePassed; // 15 minutes = 900000 ms
@@ -1612,26 +1593,11 @@
             });
             container.innerHTML = html;
             
-            // AA Auto-scaling to fit within a defined box
-            requestAnimationFrame(() => {
-                container.querySelectorAll('.chat-message-text.aa-font').forEach(el => {
-                    // Reset zoom to measure original size
-                    el.style.zoom = 1;
-                    const parentW = el.parentElement.clientWidth;
-                    const maxW = parentW - 24; // Parent width minus padding
-                    const maxH = 250; // Defined box height
-
-                    const scaleW = maxW / el.scrollWidth;
-                    const scaleH = maxH / el.scrollHeight;
-
-                    // Scale down with a 2% safety margin to prevent 1px scrollbars
-                    const scale = Math.min(1, scaleW, scaleH) * 0.98;
-                    
-                    if (scale < 1) {
-                        el.style.zoom = scale;
-                        el.style.overflow = 'hidden';
-                    }
-                });
+            // Ensure chat AA doesn't take up too much vertical space but can be scrolled
+            container.querySelectorAll('.chat-message-text.aa-font').forEach(el => {
+                el.style.maxHeight = '250px';
+                el.style.overflowY = 'auto';
+                el.style.overflowX = 'auto';
             });
 
             // Scroll to bottom
