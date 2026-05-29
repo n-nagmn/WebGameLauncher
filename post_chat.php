@@ -75,12 +75,15 @@ if ($name === '' || $message === '') {
     exit;
 }
 
+$clientId = isset($decoded['clientId']) ? trim($decoded['clientId']) : null;
+
 $new_message = [
     'id' => uniqid('msg_'),
     'name' => $name,
     'message' => $message,
     'gameId' => $gameId,
-    'timestamp' => $timestamp
+    'timestamp' => $timestamp,
+    'clientId' => $clientId
 ];
 
 $existing_messages = [];

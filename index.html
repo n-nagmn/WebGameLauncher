@@ -1314,6 +1314,7 @@
         let chatMessages = [];
         let chatSidebarOpen = false;
         let initialChatLoaded = false;
+        const myClientId = 'client_' + Math.random().toString(36).substr(2, 9);
 
         // --- DOM Elements ---
         const els = {};
@@ -1540,7 +1541,7 @@
 
                         // Check for new messages from others
                         if (initialChatLoaded) {
-                            const newItems = newMessages.filter(m => !chatMessages.some(old => old.id === m.id || (Math.abs(old.timestamp - m.timestamp) < 60000 && old.name === m.name && old.message === m.message)));
+                            const newItems = newMessages.filter(m => !chatMessages.some(old => old.id === m.id) && m.clientId !== myClientId);
                             newItems.forEach(msg => {
                                 showChatNotification(msg);
                             });
@@ -1676,7 +1677,8 @@
                 name: name,
                 message: message,
                 gameId: gameId,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                clientId: myClientId
             };
             chatMessages.push(tempMsg);
             renderChat();
@@ -1688,10 +1690,9 @@
                 const res = await fetch('./post_chat.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, message, gameId })
+                    body: JSON.stringify({ name, message, gameId, clientId: myClientId })
                 });
                 if (res.ok) {
-                    showChatNotification(tempMsg);
                     fetchChat();
                 } else {
                     showToast('チャット送信失敗', 'error');
@@ -2820,6 +2821,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
