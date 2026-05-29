@@ -233,6 +233,8 @@
             right: 370px;
         }
         .chat-notification {
+            pointer-events: auto;
+            cursor: pointer;
             background: rgba(30, 30, 30, 0.95);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-left: 4px solid var(--focus-color);
@@ -991,7 +993,9 @@
         body.light-mode .chat-input-area input, body.light-mode .chat-input-area select, body.light-mode .chat-input-area textarea {
             background: #fff; color: #111; border-color: #ccc;
         }
-        body.light-mode .chat-notification { background: rgba(255, 255, 255, 0.95); box-shadow: 0 8px 32px rgba(0,0,0,0.15); border-color: rgba(0,0,0,0.1); }
+        body.light-mode .chat-notification {
+            pointer-events: auto;
+            cursor: pointer; background: rgba(255, 255, 255, 0.95); box-shadow: 0 8px 32px rgba(0,0,0,0.15); border-color: rgba(0,0,0,0.1); }
         body.light-mode .chat-notification-name { color: #111; }
         body.light-mode .chat-notification-game { background: rgba(0,0,0,0.1); color: #333; }
         body.light-mode .chat-notification-text { color: #333; }
@@ -2839,6 +2843,7 @@
     </script>
 </body>
 </html>
+
 
 
 
