@@ -65,7 +65,7 @@ if ($action === 'delete') {
 
 // Default post action
 $name = isset($decoded['name']) ? mb_substr(trim($decoded['name']), 0, 30, 'UTF-8') : '名無しさん';
-$message = isset($decoded['message']) ? mb_substr(trim($decoded['message']), 0, 100000, 'UTF-8') : '';
+$message = isset($decoded['message']) ? trim($decoded['message']) : '';
 $gameId = !empty($decoded['gameId']) ? trim($decoded['gameId']) : null;
 $timestamp = time() * 1000;
 
