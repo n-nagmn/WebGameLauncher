@@ -2685,16 +2685,6 @@
             els.settingsModal = document.getElementById('settings-modal');
             els.searchInput = document.getElementById('search-input');
 
-            // Load Global Config
-            fetchChat();
-            setInterval(fetchChat, 3000);
-            
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden) {
-                    fetchChat();
-                }
-            });
-
             try {
                 const res = await fetch('./config.json?t=' + Date.now());
                 if (res.ok) {
@@ -2807,6 +2797,15 @@
             setInterval(() => {
                 renderGames();
             }, 60000);
+
+            // Chat polling (start after games are loaded)
+            fetchChat();
+            setInterval(fetchChat, 3000);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    fetchChat();
+                }
+            });
         }
 
         function handleCategoryChange(select) {
@@ -2857,6 +2856,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
