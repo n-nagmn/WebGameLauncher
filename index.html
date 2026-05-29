@@ -376,6 +376,9 @@
             transform: rotate(90deg);
             background: rgba(255,255,255,0.05);
         }
+        .settings-btn.chat-btn:hover {
+            transform: scale(1.1);
+        }
 
         /* ========================================
          * Main Content & Grid
@@ -960,7 +963,7 @@
                 <input type="text" id="search-input" placeholder="検索..." autocomplete="off">
             </div>
             <span class="header-info-text">|</span>
-            <div class="settings-btn" onclick="App.openChat()" title="募集・チャット" tabindex="0" role="button" aria-label="チャット">💬</div>
+            <div class="settings-btn chat-btn" onclick="App.openChat()" title="チャット" tabindex="0" role="button" aria-label="チャット">💬</div>
             <div class="settings-btn" onclick="App.openSettings()" title="設定 (S)" tabindex="0" role="button" aria-label="設定">⚙️</div>
         </div>
     </header>
@@ -1430,9 +1433,12 @@
                 
                 html += `
                     <div class="chat-message-item">
-                        <div class="chat-message-header">
-                            <span class="chat-message-name">${escapeHtml(name)}</span>
-                            <span>${timeStr}</span>
+                        <div class="chat-message-header" style="display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 3px; align-items: center;">
+                            <div>
+                                <span class="chat-message-name">${escapeHtml(name)}</span>
+                                <span>${timeStr}</span>
+                            </div>
+                            <button onclick="App.deleteChatMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>
                         </div>
                         ${gameHtml}
                         <div class="chat-message-text">${escapeHtml(msg.message)}</div>
@@ -2526,7 +2532,7 @@
                 const chatSidebar = document.getElementById('chat-sidebar');
                 if (chatSidebar.classList.contains('active') && 
                     !chatSidebar.contains(e.target) && 
-                    !e.target.closest('[onclick="App.openChat()"]')) {
+                    !e.target.closest('.chat-btn')) {
                     closeChat();
                 }
             });
@@ -2589,13 +2595,31 @@
             renderGames();
         }
 
+        async function deleteChatMessage(timestamp) {
+            if (!confirm('このメッセージを削除しますか？')) return;
+            try {
+                const res = await fetch('./post_chat.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete', timestamp: timestamp })
+                });
+                if (res.ok) {
+                    fetchChat();
+                } else {
+                    showToast('削除失敗', 'error');
+                }
+            } catch(e) {
+                showToast('通信エラー', 'error');
+            }
+        }
+
         return {
             init,
             openGameModal, closeGameModal, saveGame, deleteGame, deleteCategory,
             openSettings, closeSettings, saveSettings, exportData, importData,
             setCategory, setPlayerFilter, handleCategoryChange, togglePin, toggleRanking,
             handleCategoryDragStart, handleCategoryDragOver, handleCategoryDrop, handleCategoryDragEnd,
-            openChat, closeChat, sendChatMessage, openChatGame,
+            openChat, closeChat, sendChatMessage, openChatGame, deleteChatMessage,
             loadServerBackups, createServerBackup, restoreServerBackup, deleteServerBackup
         };
     })();

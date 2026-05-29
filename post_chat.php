@@ -35,20 +35,37 @@ if (empty($json_data)) {
 }
 
 $decoded = json_decode($json_data, true);
-if ($decoded === null) {
-    $response["message"] = "JSONの形式が不正です";
-    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+if (!is_array($decoded)) {
+    $decoded = [];
+}
+
+$action = $decoded['action'] ?? 'post';
+
+if ($action === 'delete') {
+    $timestamp_to_delete = isset($decoded['timestamp']) ? intval($decoded['timestamp']) : 0;
+    if ($timestamp_to_delete > 0) {
+        $chat_data = [];
+        if (file_exists($file_path)) {
+            $raw = file_get_contents($file_path);
+            $chat_data = json_decode($raw, true) ?: [];
+        }
+        // Filter out the message
+        $chat_data = array_values(array_filter($chat_data, function($msg) use ($timestamp_to_delete) {
+            return (!isset($msg['timestamp']) || $msg['timestamp'] !== $timestamp_to_delete);
+        }));
+        
+        file_put_contents($file_path, json_encode($chat_data, JSON_UNESCAPED_UNICODE));
+        echo json_encode(["status" => "success"]);
+    } else {
+        http_response_code(400);
+        echo json_encode(["status" => "error", "message" => "Invalid timestamp"]);
+    }
     exit;
 }
 
-if (!isset($decoded['name']) || !isset($decoded['message'])) {
-    $response["message"] = "名前とメッセージは必須です";
-    echo json_encode($response, JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-$name = htmlspecialchars(mb_substr(trim($decoded['name']), 0, 30), ENT_QUOTES, 'UTF-8');
-$message = htmlspecialchars(mb_substr(trim($decoded['message']), 0, 200), ENT_QUOTES, 'UTF-8');
+// Default post action
+$name = isset($decoded['name']) ? htmlspecialchars(mb_substr(trim($decoded['name']), 0, 30), ENT_QUOTES, 'UTF-8') : '名無し';
+$message = isset($decoded['message']) ? htmlspecialchars(mb_substr(trim($decoded['message']), 0, 200), ENT_QUOTES, 'UTF-8') : '';
 $gameId = isset($decoded['gameId']) ? intval($decoded['gameId']) : null;
 $timestamp = time() * 1000;
 
