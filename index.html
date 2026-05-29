@@ -1379,7 +1379,8 @@
                 ${(() => { let msgText = msg.message; if (msgText.toLowerCase().startsWith('/a')) { return `<div class="chat-notification-text aa-font">${escapeHtml(msgText.replace(/^\/a(?:\r?\n| )?/i, ''))}</div>`; } return `<div class="chat-notification-text">${escapeHtml(msgText)}</div>`; })()}
             `;
 
-            notif.onclick = () => {
+            notif.onclick = (e) => {
+                e.stopPropagation();
                 notif.classList.add('hiding');
                 setTimeout(() => notif.remove(), 300);
                 if (msg.gameId) {
@@ -1798,14 +1799,7 @@
             if (isRankingActive) {
                 // ランキング有効時はプレイ回数順（降順）
                 filteredGames.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
-            } else {
-                // 通常時はピン留めを最優先
-                filteredGames.sort((a, b) => {
-                    if (a.isPinned && !b.isPinned) return -1;
-                    if (!a.isPinned && b.isPinned) return 1;
-                    return 0;
-                });
-            }
+            } else { filteredGames.sort((a, b) => { if (a.isPinned && !b.isPinned) return -1; if (!a.isPinned && b.isPinned) return 1; if (a.hasUpdate && !b.hasUpdate) return -1; if (!a.hasUpdate && b.hasUpdate) return 1; return (b.updatedAt || 0) - (a.updatedAt || 0); }); }
 
             if (filteredGames.length === 0 && games.length > 0) {
                 grid.innerHTML = `
@@ -2814,6 +2808,7 @@
     </script>
 </body>
 </html>
+
 
 
 
