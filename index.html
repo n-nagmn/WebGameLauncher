@@ -244,8 +244,8 @@
             font-size: 13px;
             width: max-content;
             min-width: 320px;
-            max-width: 800px;
-            max-height: 80vh;
+            max-width: 90vw;
+            max-height: 90vh;
             overflow-y: auto;
             flex-shrink: 0;
             transform: translateX(120%);
@@ -1415,8 +1415,8 @@
             if (aaEl) {
                 requestAnimationFrame(() => {
                     aaEl.style.zoom = 1;
-                    const maxW = 750;
-                    const maxH = window.innerHeight * 0.75;
+                    const maxW = window.innerWidth * 0.85;
+                    const maxH = window.innerHeight * 0.85;
                     const scaleW = maxW / aaEl.scrollWidth;
                     const scaleH = maxH / aaEl.scrollHeight;
                     const scale = Math.min(1, scaleW, scaleH) * 0.98;
@@ -2873,6 +2873,7 @@
     </script>
 </body>
 </html>
+
 
 
 
