@@ -1600,6 +1600,7 @@
             const savedName = localStorage.getItem('chat_name');
             if (savedName) document.getElementById('chat-name').value = savedName;
 
+            fetchChat();
         }
 
         function closeChat() {
@@ -2633,6 +2634,12 @@
             fetchChat();
             setInterval(fetchChat, 5000);
             
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    fetchChat();
+                }
+            });
+
             try {
                 const res = await fetch('./config.json?t=' + Date.now());
                 if (res.ok) {
