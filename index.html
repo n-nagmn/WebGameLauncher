@@ -1409,7 +1409,24 @@
             };
 
             container.prepend(notif);
-            
+
+            // AA Auto-scaling for notification
+            const aaEl = notif.querySelector('.chat-notification-text.aa-font');
+            if (aaEl) {
+                requestAnimationFrame(() => {
+                    aaEl.style.zoom = 1;
+                    const maxW = 350;
+                    const maxH = 200;
+                    const scaleW = maxW / aaEl.scrollWidth;
+                    const scaleH = maxH / aaEl.scrollHeight;
+                    const scale = Math.min(1, scaleW, scaleH) * 0.98;
+                    if (scale < 1) {
+                        aaEl.style.zoom = scale;
+                        aaEl.style.overflow = 'hidden';
+                    }
+                });
+            }
+
             // Ensure notification can scroll if it's too large
             setTimeout(() => notif.classList.add('show'), 10);
         }
@@ -2856,6 +2873,7 @@
     </script>
 </body>
 </html>
+
 
 
 
