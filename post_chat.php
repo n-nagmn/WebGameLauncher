@@ -76,12 +76,14 @@ if ($name === '' || $message === '') {
 }
 
 $clientId = isset($decoded['clientId']) ? trim($decoded['clientId']) : null;
+$replyTo = !empty($decoded['replyTo']) ? trim($decoded['replyTo']) : null;
 
 $new_message = [
     'id' => uniqid('msg_'),
     'name' => $name,
     'message' => $message,
     'gameId' => $gameId,
+    'replyTo' => $replyTo,
     'timestamp' => $timestamp,
     'clientId' => $clientId
 ];
