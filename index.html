@@ -2748,8 +2748,17 @@
                     
                     if (serverTimestamps) {
                         if (ts.games !== serverTimestamps.games || ts.config !== serverTimestamps.config) {
-                            console.log('Data changed remotely. Reloading...');
-                            location.reload();
+                            console.log('Data changed remotely. Soft reloading...');
+                            let shouldRender = false;
+                            if (ts.games !== serverTimestamps.games) {
+                                const gRes = await fetch('./games.json?t=' + Date.now());
+                                if (gRes.ok) { games = await gRes.json(); shouldRender = true; }
+                            }
+                            if (ts.config !== serverTimestamps.config) {
+                                const cRes = await fetch('./config.json?t=' + Date.now());
+                                if (cRes.ok) { const loadedConfig = await cRes.json(); serverConfig = { ...DEFAULT_SERVER_CONFIG, ...loadedConfig }; applyConfig(); shouldRender = true; }
+                            }
+                            if (shouldRender) { renderGames(); renderFilters(); }
                         }
                     } else {
                         serverTimestamps = ts;
@@ -2811,6 +2820,7 @@
     </script>
 </body>
 </html>
+
 
 
 
