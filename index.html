@@ -1868,7 +1868,7 @@
                 const lastPlayed = game.lastPlayed || 0;
                 const diffMs = now - lastPlayed;
                 let activeBadge = '';
-                if (isRankingActive) { const plays = game.playCount || 0; activeBadge = ` <span class="active-badge" style="background: rgba(255, 107, 107, 0.9); color: #fff;"> 🏆 ${plays} プレイ </span>`; } else if (lastPlayed > 0 && diffMs < 3600000) {
+                if (isRankingActive) { const plays = game.playCount || 0; activeBadge = `<span class="active-badge" style="background: rgba(0, 0, 0, 0.8); color: #ffd700; border: 1px solid #ffd700; padding: 4px 8px; font-size: 12px; letter-spacing: 0.5px;">👑 ${plays}</span>`; } else if (lastPlayed > 0 && diffMs < 3600000) {
                     const diffMins = Math.floor(diffMs / 60000);
                     
                     // ユニークユーザー数のカウント（過去1時間以内）
