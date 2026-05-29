@@ -220,6 +220,14 @@
             gap: 10px;
             pointer-events: none;
             transition: right var(--transition-normal);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 10px;
+            margin-right: -10px; /* offset padding */
+        }
+        #chat-notification-container:hover {
+            pointer-events: auto;
         }
         body.chat-open #chat-notification-container {
             right: 370px;
@@ -1388,7 +1396,7 @@
                 }
             };
 
-            container.appendChild(notif);
+            container.prepend(notif);
             
             // Auto-scale AA to prevent scrollbars in notification
             requestAnimationFrame(() => {
