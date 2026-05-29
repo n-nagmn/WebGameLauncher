@@ -213,9 +213,10 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            z-index: 1000;
+            z-index: 10000;
             display: flex;
             flex-direction: column;
+            align-items: flex-end;
             gap: 10px;
             pointer-events: none;
             transition: right var(--transition-normal);
@@ -231,7 +232,9 @@
             border-radius: 6px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
             font-size: 13px;
-            width: 320px;
+            width: max-content;
+            min-width: 320px;
+            max-width: 800px;
             transform: translateX(120%);
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
             pointer-events: auto;
