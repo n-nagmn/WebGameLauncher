@@ -943,6 +943,7 @@
         .chat-message-game { display: inline-block; background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s;}
         .chat-message-game:hover { background: rgba(255,255,255,0.2); }
         .chat-message-text { word-break: break-word; line-height: 1.4; color: #eee; white-space: pre-wrap; }
+        .aa-font { font-family: 'MS PGothic', 'Mona', 'Saitamaar', sans-serif !important; font-size: 16px !important; line-height: 1.1 !important; white-space: pre !important; overflow-x: auto; padding-bottom: 4px; }
         .chat-input-area {
             padding: 16px;
             background: rgba(0,0,0,0.2);
@@ -1368,7 +1369,7 @@
                     <span>${timeStr}</span>
                 </div>
                 ${gameHtml}
-                <div class="chat-notification-text">${escapeHtml(msg.message)}</div>
+                ${(() => { let msgText = msg.message; if (msgText.startsWith('/aa\n') || msgText.startsWith('/aa ')) { return `<div class="chat-notification-text aa-font">${escapeHtml(msgText.substring(4))}</div>`; } return `<div class="chat-notification-text">${escapeHtml(msgText)}</div>`; })()}
             `;
 
             notif.onclick = () => {
@@ -1565,7 +1566,7 @@
                             <button onclick="App.deleteChatMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>
                         </div>
                         ${gameHtml}
-                        <div class="chat-message-text">${escapeHtml(msg.message)}</div>
+                        ${(() => { let msgText = msg.message; if (msgText.startsWith('/aa\n') || msgText.startsWith('/aa ')) { return `<div class="chat-message-text aa-font">${escapeHtml(msgText.substring(4))}</div>`; } return `<div class="chat-message-text">${escapeHtml(msgText)}</div>`; })()}
                     </div>
                 `;
             });
@@ -2771,5 +2772,6 @@
     </script>
 </body>
 </html>
+
 
 
