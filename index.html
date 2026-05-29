@@ -1072,12 +1072,16 @@
             <div class="setting-group">
                 <div class="form-group">
                     <label for="setting-grid-size">カードサイズ</label>
-                    <select id="setting-grid-size">
-                        <option value="180px">小 (180px)</option>
-                        <option value="240px">中 (240px) - 標準</option>
-                        <option value="300px">大 (300px)</option>
-                        <option value="360px">特大 (360px)</option>
-                    </select>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="setting-grid-size" onchange="App.handleGridSizeChange()" style="flex: 1;">
+                            <option value="180px">小 (180px)</option>
+                            <option value="240px">中 (240px) - 標準</option>
+                            <option value="300px">大 (300px)</option>
+                            <option value="360px">特大 (360px)</option>
+                            <option value="custom">カスタム</option>
+                        </select>
+                        <input type="number" id="setting-grid-size-custom" placeholder="px" style="display: none; flex: 1; width: 80px;" min="50" max="1000">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="setting-clock-format">時計のフォーマット</label>
@@ -2251,7 +2255,20 @@
 
         function openSettings() {
             // Local Config
-            document.getElementById('setting-grid-size').value = localConfig.gridSize || '240px';
+            const currentSize = localConfig.gridSize || '240px';
+            const sizeSelect = document.getElementById('setting-grid-size');
+            const sizeCustom = document.getElementById('setting-grid-size-custom');
+            let sizeExists = Array.from(sizeSelect.options).some(opt => opt.value === currentSize);
+            
+            if (sizeExists) {
+                sizeSelect.value = currentSize;
+                sizeCustom.style.display = 'none';
+            } else {
+                sizeSelect.value = 'custom';
+                sizeCustom.style.display = 'block';
+                sizeCustom.value = parseInt(currentSize) || 240;
+            }
+
             document.getElementById('setting-clock-format').value = localConfig.clockFormat || '24h';
             document.getElementById('setting-accent-color').value = localConfig.accentColor || '#00e6e6';
             document.getElementById('setting-border-radius').value = localConfig.borderRadius || '8px';
@@ -2278,8 +2295,14 @@
 
         function saveSettings() {
             // ローカル（個人）設定の保存
+            let newSize = document.getElementById('setting-grid-size').value;
+            if (newSize === 'custom') {
+                const customVal = document.getElementById('setting-grid-size-custom').value;
+                newSize = customVal ? `${customVal}px` : '240px';
+            }
+
             localConfig = {
-                gridSize: document.getElementById('setting-grid-size').value,
+                gridSize: newSize,
                 clockFormat: document.getElementById('setting-clock-format').value,
                 accentColor: document.getElementById('setting-accent-color').value,
                 borderRadius: document.getElementById('setting-border-radius').value,
@@ -2334,6 +2357,11 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             showToast('データをエクスポートしました', 'success');
+        }
+
+        function handleGridSizeChange() {
+            const val = document.getElementById('setting-grid-size').value;
+            document.getElementById('setting-grid-size-custom').style.display = (val === 'custom') ? 'block' : 'none';
         }
 
         function importData(event) {
@@ -2619,7 +2647,7 @@
         return {
             init,
             openGameModal, closeGameModal, saveGame, deleteGame, deleteCategory,
-            openSettings, closeSettings, saveSettings, exportData, importData,
+            openSettings, closeSettings, saveSettings, exportData, importData, handleGridSizeChange,
             setCategory, setPlayerFilter, handleCategoryChange, togglePin, toggleRanking,
             handleCategoryDragStart, handleCategoryDragOver, handleCategoryDrop, handleCategoryDragEnd,
             openChat, closeChat, sendChatMessage, openChatGame, deleteChatMessage,
