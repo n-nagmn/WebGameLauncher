@@ -1637,7 +1637,7 @@
                                 
                                 <span>${timeStr}</span>
                             </div>
-                            <button onclick="App.deleteChatMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>
+                            ${msg.clientId === myClientId ? `<button onclick="App.deleteChatMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>` : ''}
                         </div>
                         ${gameHtml}
                         ${msg.imageUrl ? `<div style="margin-top: 8px;"><a href="${escapeHtml(msg.imageUrl)}" target="_blank"><img src="${escapeHtml(msg.imageUrl)}" style="max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);" alt="Image"></a></div>` : ''}
@@ -2905,7 +2905,7 @@
                 const res = await fetch('./post_chat.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'delete', timestamp: timestamp })
+                    body: JSON.stringify({ action: 'delete', timestamp: timestamp, clientId: myClientId })
                 });
                 if (res.ok) {
                     fetchChat();
@@ -2919,6 +2919,14 @@
 
         function openShare() {
             document.getElementById('share-name').value = document.getElementById('chat-name').value || localStorage.getItem('chat_name') || '';
+            
+            const shareSelect = document.getElementById('share-game-select');
+            let options = '<option value="">ゲーム指定なし</option>';
+            games.forEach(g => {
+                options += `<option value="${g.id}">${escapeHtml(g.name)}</option>`;
+            });
+            shareSelect.innerHTML = options;
+            
             document.getElementById('share-message').value = '';
             clearShareImage();
             document.getElementById('share-sidebar').classList.add('active');
@@ -2973,11 +2981,13 @@
             const nameInput = document.getElementById('share-name');
             const messageInput = document.getElementById('share-message');
             const imageInput = document.getElementById('share-image');
+            const gameSelect = document.getElementById('share-game-select');
             const btn = document.getElementById('share-submit-btn');
             
             const name = nameInput.value.trim() || '名無しさん';
             const message = messageInput.value.trim();
             const file = imageInput.files[0];
+            const gameId = gameSelect.value ? parseInt(gameSelect.value, 10) : null;
             
             if (!message && !file) {
                 showToast('メッセージまたは画像を入力してください', 'error');
@@ -2996,6 +3006,7 @@
             formData.append('message', message);
             formData.append('clientId', myClientId);
             formData.append('isShare', 'true');
+            if (gameId) formData.append('gameId', gameId);
             if (file) {
                 formData.append('image', file);
             }
@@ -3009,18 +3020,12 @@
                 const data = await response.json();
                 
                 if (data.status === 'success') {
-                    showToast('投稿しました', 'success');
+                    showChatNotification(data.data);
                     localStorage.setItem('chat_name', name);
                     document.getElementById('chat-name').value = name;
                     closeShare();
                     
-                    if (!document.getElementById('chat-sidebar').classList.contains('active')) {
-                        openChat();
-                    } else {
-                        if (chatPollingInterval) { clearInterval(chatPollingInterval); chatPollingInterval = null; }
-                        fetchChatMessages();
-                        chatPollingInterval = setInterval(fetchChatMessages, 5000);
-                    }
+                    fetchChat();
                 } else {
                     showToast('エラー: ' + data.message, 'error');
                 }
