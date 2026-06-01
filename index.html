@@ -1273,6 +1273,7 @@
                         </select>
                     </div>
                     <div style="display: flex; gap: 10px;">
+                        <button class="btn-primary" style="flex:1; padding: 10px;" onclick="App.downloadServerBackup()">DL</button>
                         <button class="btn-danger" style="flex:2; padding: 10px;" onclick="App.restoreServerBackup()">選択したバックアップから復元</button>
                         <button class="btn-danger" style="flex:1; padding: 10px;" onclick="App.deleteServerBackup()">削除</button>
                     </div>
@@ -2788,6 +2789,22 @@
             }
         }
 
+        function downloadServerBackup() {
+            const select = document.getElementById('server-backup-select');
+            const filenames = Array.from(select.selectedOptions).map(opt => opt.value).filter(v => v !== '');
+            if (filenames.length !== 1) {
+                showToast('ダウンロードするバックアップを「1つだけ」選択してください', 'warning');
+                return;
+            }
+            const filename = filenames[0];
+            const a = document.createElement('a');
+            a.href = `./backups/${filename}`;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
         function updateClock() {
             // 時計機能は削除されているが、互換性のために残す
         }
@@ -3255,7 +3272,7 @@
             setCategory, setPlayerFilter, handleCategoryChange, togglePin, toggleRanking,
             handleCategoryDragStart, handleCategoryDragOver, handleCategoryDrop, handleCategoryDragEnd,
             openChat, closeChat, sendChatMessage, openChatGame, deleteChatMessage,
-            loadServerBackups, createServerBackup, restoreServerBackup, deleteServerBackup,
+            loadServerBackups, createServerBackup, restoreServerBackup, deleteServerBackup, downloadServerBackup,
             openShare, closeShare, submitShare, handleShareImageSelect, clearShareImage, deleteShareMessage
         };
     })();
