@@ -2762,6 +2762,24 @@
                     this.style.overflowY = this.scrollHeight > maxH ? 'auto' : 'hidden';
                 });
             }
+            
+            const shareMsgInput = document.getElementById('share-message');
+            if (shareMsgInput) {
+                shareMsgInput.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        submitShare();
+                    }
+                });
+                shareMsgInput.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    const maxH = window.innerHeight * 0.5;
+                    const newHeight = Math.min(this.scrollHeight, maxH);
+                    this.style.height = newHeight + 'px';
+                    this.style.overflowY = this.scrollHeight > maxH ? 'auto' : 'hidden';
+                });
+            }
+
             setupShareDragAndDrop();
             els.gameModal = document.getElementById('game-modal');
             els.settingsModal = document.getElementById('settings-modal');
@@ -3130,7 +3148,10 @@
                     localStorage.setItem('chat_name', name);
                     document.getElementById('share-name').value = name;
                     const msgInput = document.getElementById('share-message');
-                    if (msgInput) msgInput.value = '';
+                    if (msgInput) {
+                        msgInput.value = '';
+                        msgInput.style.height = 'auto';
+                    }
                     clearShareImage();
                     
                     fetchShare();
