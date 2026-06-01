@@ -3121,10 +3121,12 @@
             document.getElementById('share-message').value = '';
             clearShareImage();
             document.getElementById('share-sidebar').classList.add('active');
+            document.body.classList.add('chat-open');
         }
 
         function closeShare() {
             document.getElementById('share-sidebar').classList.remove('active');
+            document.body.classList.remove('chat-open');
         }
         
         function handleShareImageSelect() {

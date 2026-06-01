@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Web Game Launcher Pro - Backup Management Endpoint
  */
@@ -58,39 +58,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($post_action === 'create') {
         $backup_name = $backup_dir . '/backup_' . date('Ymd_His') . '_' . uniqid() . '.zip';
         
-        $zip = new ZipArchive();
-        if ($zip->open($backup_name, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
-            if (file_exists($games_file)) $zip->addFile($games_file, 'games.json');
-            if (file_exists($share_file)) $zip->addFile($share_file, 'share.json');
+        $paths = [];
+        if (file_exists($games_file)) $paths[] = 'games.json';
+        if (file_exists($share_file)) $paths[] = 'share.json';
+        if (is_dir($uploads_dir)) $paths[] = 'uploads';
+        
+        if (count($paths) > 0) {
+            $paths_str = implode(',', array_map(function($p) { return "'$p'"; }, $paths));
+            $ps_cmd = "powershell -NoProfile -Command "Compress-Archive -Path $paths_str -DestinationPath '$backup_name' -Force"";
+            exec($ps_cmd, $output, $ret);
             
-            if (is_dir($uploads_dir)) {
-                $files = new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator($uploads_dir),
-                    RecursiveIteratorIterator::LEAVES_ONLY
-                );
-                foreach ($files as $name => $file) {
-                    if (!$file->isDir()) {
-                        $filePath = $file->getRealPath();
-                        $relativePath = 'uploads/' . substr($filePath, strlen(realpath($uploads_dir)) + 1);
-                        $zip->addFile($filePath, $relativePath);
-                    }
-                }
+            if ($ret === 0 && file_exists($backup_name)) {
+                @chmod($backup_name, 0666);
+                $response["status"] = "success";
+                $response["message"] = "バックアップを作成しました";
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                exit;
             }
-            $zip->close();
-            @chmod($backup_name, 0666);
-            $response["status"] = "success";
-            $response["message"] = "バックアップを作成しました";
-            echo json_encode($response, JSON_UNESCAPED_UNICODE);
-        } else {
-            $response["message"] = "バックアップの作成に失敗しました";
-            echo json_encode($response, JSON_UNESCAPED_UNICODE);
         }
+        
+        $response["message"] = "バックアップの作成に失敗しました";
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
         exit;
     }
 
     if ($post_action === 'restore') {
         $filename = $decoded['filename'] ?? '';
-        if (empty($filename) || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
+        if (empty($filename) || strpos($filename, '/') !== false || strpos($filename, '\') !== false) {
             $response["message"] = "不正なファイル名です";
             echo json_encode($response, JSON_UNESCAPED_UNICODE);
             exit;
@@ -108,10 +102,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (pathinfo($target_backup, PATHINFO_EXTENSION) === 'zip') {
-            $zip = new ZipArchive();
-            if ($zip->open($target_backup) === TRUE) {
-                $zip->extractTo(__DIR__);
-                $zip->close();
+            $dest = __DIR__;
+            $ps_cmd = "powershell -NoProfile -Command "Expand-Archive -Path '$target_backup' -DestinationPath '$dest' -Force"";
+            exec($ps_cmd, $output, $ret);
+            
+            if ($ret === 0) {
                 @chmod($games_file, 0777);
                 @chmod($share_file, 0777);
                 $response["status"] = "success";
@@ -138,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($post_action === 'delete') {
         $filename = $decoded['filename'] ?? '';
-        if (empty($filename) || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
+        if (empty($filename) || strpos($filename, '/') !== false || strpos($filename, '\') !== false) {
             $response["message"] = "不正なファイル名です";
             echo json_encode($response, JSON_UNESCAPED_UNICODE);
             exit;
