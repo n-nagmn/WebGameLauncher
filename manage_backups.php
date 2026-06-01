@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         $backup_name = $backup_dir . '/games_manual_' . date('Ymd_His') . '_' . uniqid() . '.json';
-        if (copy($games_file, $backup_name)) {
+        if (@copy($games_file, $backup_name)) {
             @chmod($backup_name, 0666);
             $response["status"] = "success";
             $response["message"] = "バックアップを作成しました";
@@ -88,10 +88,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Before restoring, create an auto-backup of the current state just in case
         if (file_exists($games_file)) {
-            copy($games_file, $backup_dir . '/games_pre_restore_' . date('Ymd_His') . '.json');
+            @copy($games_file, $backup_dir . '/games_pre_restore_' . date('Ymd_His') . '.json');
+            @chmod($games_file, 0666);
         }
 
-        if (copy($target_backup, $games_file)) {
+        $backup_content = @file_get_contents($target_backup);
+        if ($backup_content !== false && @file_put_contents($games_file, $backup_content) !== false) {
             @chmod($games_file, 0777);
             $response["status"] = "success";
             $response["message"] = "バックアップから復元しました";
