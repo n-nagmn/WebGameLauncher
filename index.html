@@ -1013,6 +1013,17 @@
         }
 
 
+        .chat-sidebar.drag-over::after {
+            content: '';
+            position: absolute;
+            top: 10px; left: 10px; right: 10px; bottom: 10px;
+            border: 3px dashed var(--focus-color);
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             header { padding: 0 20px; }
@@ -3106,12 +3117,15 @@
             if(!dropZone || !fileInput) return;
             dropZone.addEventListener('dragover', e => {
                 e.preventDefault();
+                dropZone.classList.add('drag-over');
             });
             dropZone.addEventListener('dragleave', e => {
                 e.preventDefault();
+                dropZone.classList.remove('drag-over');
             });
             dropZone.addEventListener('drop', e => {
                 e.preventDefault();
+                dropZone.classList.remove('drag-over');
                 if(e.dataTransfer.files && e.dataTransfer.files[0]) {
                     if(e.dataTransfer.files[0].type.startsWith('image/')) {
                         fileInput.files = e.dataTransfer.files;
