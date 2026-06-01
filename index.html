@@ -1277,7 +1277,7 @@
             </select>
             <div class="share-input-box" style="position: relative; width: 100%; border-radius: 6px; display: flex; flex-direction: column; min-height: 80px; box-sizing: border-box; margin-bottom: 8px;" id="share-input-wrapper">
                 <textarea id="share-message" placeholder="メッセージを入力... (画像はドラッグ＆ドロップで添付)" rows="2" style="width: 100%; border: none; background: transparent; color: var(--text-color); padding: 10px; font-size: 13px; font-family: inherit; outline: none; resize: none; box-sizing: border-box; flex-grow: 1; margin: 0;"></textarea>
-                <div id="share-image-preview-container" style="display: none; position: relative; margin: 0 10px 10px 10px; width: fit-content; background: rgba(128,128,128,0.1); padding: 4px; border-radius: 6px;">
+                <div id="share-image-preview-container" style="display: none; position: relative; margin: 0 10px 10px 10px; width: fit-content;">
                     <img id="share-image-preview-img" style="max-height: 80px; border-radius: 4px;" />
                     <button onclick="App.clearShareImage()" style="position: absolute; top: -8px; right: -8px; background: #ff5252; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 14px; padding: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">×</button>
                 </div>
@@ -3106,15 +3106,15 @@
             if(!dropZone || !fileInput) return;
             dropZone.addEventListener('dragover', e => {
                 e.preventDefault();
-                dropZone.style.background = 'rgba(255,255,255,0.05)';
+                dropZone.style.opacity = '0.8';
             });
             dropZone.addEventListener('dragleave', e => {
                 e.preventDefault();
-                dropZone.style.background = '';
+                dropZone.style.opacity = '';
             });
             dropZone.addEventListener('drop', e => {
                 e.preventDefault();
-                dropZone.style.background = '';
+                dropZone.style.opacity = '';
                 if(e.dataTransfer.files && e.dataTransfer.files[0]) {
                     if(e.dataTransfer.files[0].type.startsWith('image/')) {
                         fileInput.files = e.dataTransfer.files;
