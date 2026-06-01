@@ -1002,6 +1002,16 @@
         body.light-mode .chat-notification-name { color: #111; }
         body.light-mode .chat-notification-game { background: rgba(0,0,0,0.1); color: #333; }
         body.light-mode .chat-notification-text { color: #333; }
+        
+        .share-input-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        body.light-mode .share-input-box {
+            background: #fff;
+            border-color: #ccc;
+        }
+
 
         /* Responsive */
         @media (max-width: 768px) {
@@ -1265,7 +1275,7 @@
             <select id="share-game-select">
                 <option value="">ゲーム指定なし</option>
             </select>
-            <div style="position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(0,0,0,0.2); display: flex; flex-direction: column; min-height: 80px; box-sizing: border-box; margin-bottom: 8px;" id="share-input-wrapper">
+            <div class="share-input-box" style="position: relative; width: 100%; border-radius: 6px; display: flex; flex-direction: column; min-height: 80px; box-sizing: border-box; margin-bottom: 8px;" id="share-input-wrapper">
                 <textarea id="share-message" placeholder="メッセージを入力... (画像はドラッグ＆ドロップで添付)" rows="2" style="width: 100%; border: none; background: transparent; color: var(--text-color); padding: 10px; font-size: 13px; font-family: inherit; outline: none; resize: none; box-sizing: border-box; flex-grow: 1; margin: 0;"></textarea>
                 <div id="share-image-preview-container" style="display: none; position: relative; margin: 0 10px 10px 10px; width: fit-content; background: rgba(128,128,128,0.1); padding: 4px; border-radius: 6px;">
                     <img id="share-image-preview-img" style="max-height: 80px; border-radius: 4px;" />
