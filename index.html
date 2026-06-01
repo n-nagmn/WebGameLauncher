@@ -1258,36 +1258,25 @@
             <button class="chat-close-btn" onclick="App.closeShare()" title="閉じる">×</button>
         </div>
         
-        <div class="chat-input-area" style="flex: 1; overflow-y: auto; justify-content: flex-start; gap: 20px;">
-            <div class="form-group" style="margin: 0; padding: 0;">
-                <label for="share-name" style="display: block; margin-bottom: 8px; font-size: 13px; color: #ccc;">名前 (省略可)</label>
-                <input type="text" id="share-name" placeholder="名無しさん" autocomplete="off" maxlength="30" style="width: 100%; padding: 10px 14px; outline: none; border-radius: 6px;">
+        <div class="chat-messages" id="share-preview-area" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; color: #888;">
+            <div id="share-image-preview-container" style="display: none; position: relative;">
+                <img id="share-image-preview-img" style="max-width: 100%; max-height: 250px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);" />
+                <button onclick="App.clearShareImage()" style="position: absolute; top: -10px; right: -10px; background: #ff5252; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">×</button>
             </div>
-            
-            <div class="form-group" style="margin: 0; padding: 0;">
-                <label for="share-message" style="display: block; margin-bottom: 8px; font-size: 13px; color: #ccc;">メッセージ (最大300文字) *</label>
-                <textarea id="share-message" placeholder="メッセージを入力... (画像はここにドラッグ＆ドロップでも可)" rows="6" maxlength="300" required oninput="document.getElementById('share-message-count').innerText = this.value.length + ' / 300'" style="width: 100%; padding: 10px 14px; outline: none; border-radius: 6px; resize: none;"></textarea>
-                <div style="font-size: 11px; color: #888; text-align: right; margin-top: 4px;" id="share-message-count">0 / 300</div>
+            <div id="share-drag-hint" style="font-size: 14px; margin-top: 15px;">画像をここにドラッグ＆ドロップできます</div>
+        </div>
+        
+        <div class="chat-input-area" id="share-input-container">
+            <input type="text" id="share-name" placeholder="名前 (省略可)" maxlength="30">
+            <div style="position: relative;">
+                <textarea id="share-message" placeholder="メッセージを入力... (最大300文字)" rows="2" maxlength="300" oninput="document.getElementById('share-message-count').innerText = this.value.length + ' / 300'" style="width: 100%; padding-right: 36px; box-sizing: border-box; resize: none;"></textarea>
+                <label for="share-image" style="position: absolute; right: 8px; bottom: 8px; cursor: pointer; color: #888; font-size: 18px; transition: color 0.2s;" title="画像を添付" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                </label>
+                <input type="file" id="share-image" accept="image/*" onchange="App.handleShareImageSelect()" style="display: none;">
             </div>
-            
-            <div class="form-group" style="margin: 0; padding: 0;">
-                <label for="share-image" style="display: block; margin-bottom: 8px; font-size: 13px; color: #ccc;">画像 (省略可)</label>
-                <div style="position: relative;">
-                    <label for="share-image" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                        画像を選択
-                    </label>
-                    <input type="file" id="share-image" accept="image/*" onchange="App.handleShareImageSelect()" style="display: none;">
-                </div>
-                <div id="share-image-preview" style="margin-top: 15px; display: none; position: relative; width: max-content;">
-                    <img id="share-image-preview-img" style="max-height: 150px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);" />
-                    <button onclick="App.clearShareImage()" style="position: absolute; top: -8px; right: -8px; background: #ff5252; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">×</button>
-                </div>
-            </div>
-
-            <div style="margin-top: auto; padding-top: 20px;">
-                <button class="btn-save" onclick="App.submitShare()" id="share-submit-btn" style="width: 100%; justify-content: center; padding: 12px; font-size: 15px; font-weight: 600;">投稿する</button>
-            </div>
+            <div style="font-size: 11px; color: #888; text-align: right; margin-top: 2px;" id="share-message-count">0 / 300</div>
+            <button class="btn-save" onclick="App.submitShare()" id="share-submit-btn" style="width: 100%; justify-content: center;">投稿する</button>
         </div>
     </div>
 
@@ -2953,7 +2942,8 @@
                 const r = new FileReader();
                 r.onload = e => {
                     document.getElementById('share-image-preview-img').src = e.target.result;
-                    document.getElementById('share-image-preview').style.display = 'block';
+                    document.getElementById('share-image-preview-container').style.display = 'block';
+                    document.getElementById('share-drag-hint').style.display = 'none';
                 };
                 r.readAsDataURL(input.files[0]);
             }
@@ -2961,24 +2951,25 @@
         
         function clearShareImage() {
             document.getElementById('share-image').value = '';
-            document.getElementById('share-image-preview').style.display = 'none';
+            document.getElementById('share-image-preview-container').style.display = 'none';
+            document.getElementById('share-drag-hint').style.display = 'block';
         }
         
         function setupShareDragAndDrop() {
-            const msgInput = document.getElementById('share-message');
+            const dropZone = document.getElementById('share-preview-area');
             const fileInput = document.getElementById('share-image');
-            if(!msgInput || !fileInput) return;
-            msgInput.addEventListener('dragover', e => {
+            if(!dropZone || !fileInput) return;
+            dropZone.addEventListener('dragover', e => {
                 e.preventDefault();
-                msgInput.style.background = 'rgba(255,255,255,0.1)';
+                dropZone.style.background = 'rgba(255,255,255,0.05)';
             });
-            msgInput.addEventListener('dragleave', e => {
+            dropZone.addEventListener('dragleave', e => {
                 e.preventDefault();
-                msgInput.style.background = '';
+                dropZone.style.background = '';
             });
-            msgInput.addEventListener('drop', e => {
+            dropZone.addEventListener('drop', e => {
                 e.preventDefault();
-                msgInput.style.background = '';
+                dropZone.style.background = '';
                 if(e.dataTransfer.files && e.dataTransfer.files[0]) {
                     if(e.dataTransfer.files[0].type.startsWith('image/')) {
                         fileInput.files = e.dataTransfer.files;
