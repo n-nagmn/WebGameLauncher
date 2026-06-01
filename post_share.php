@@ -23,20 +23,26 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $response = ["status" => "error", "message" => ""];
-$file_path = __DIR__ . '/chat.json';
+$file_path = __DIR__ . '/share.json';
 $max_messages = 100;
 
-$json_data = file_get_contents('php://input');
+$is_multipart = isset($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'multipart/form-data') !== false;
 
-if (empty($json_data)) {
-    $response["message"] = "データが空です";
-    echo json_encode($response, JSON_UNESCAPED_UNICODE);
-    exit;
-}
+if ($is_multipart) {
+    $decoded = $_POST;
+} else {
+    $json_data = file_get_contents('php://input');
 
-$decoded = json_decode($json_data, true);
-if (!is_array($decoded)) {
-    $decoded = [];
+    if (empty($json_data)) {
+        $response["message"] = "データが空です";
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $decoded = json_decode($json_data, true);
+    if (!is_array($decoded)) {
+        $decoded = [];
+    }
 }
 
 $action = $decoded['action'] ?? 'post';
@@ -70,15 +76,25 @@ $gameId = !empty($decoded['gameId']) ? trim($decoded['gameId']) : null;
 $timestamp = time() * 1000;
 
 if ($name === '' || $message === '') {
-    $response["message"] = "名前とメッセージを入力してください";
-    echo json_encode($response, JSON_UNESCAPED_UNICODE);
-    exit;
+    // If it's a share with an image, message can be empty? User said "画像と文字を入れれるように", let's require at least some text or an image.
+    if (!($is_multipart && isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK)) {
+        if ($message === '') {
+            $response["message"] = "名前とメッセージを入力してください";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
 }
 
 $line_count = substr_count($message, "\n") + 1;
 $is_aa = stripos(trim($message), '/a') === 0;
 
 if ($is_aa) {
+    if (isset($decoded['isShare']) && $decoded['isShare'] === 'true') {
+        $response["message"] = "シェア投稿ではアスキーアートは許可されていません。";
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     $lines = explode("\n", $message);
     foreach ($lines as $line) {
         if (mb_strlen(trim($line, "\r\n"), 'UTF-8') > 1000) {
@@ -88,15 +104,50 @@ if ($is_aa) {
         }
     }
 } else if (mb_strlen($message, 'UTF-8') > 300) {
-    $response["message"] = "通常チャットの最大文字数は300文字です。";
+    $response["message"] = "最大文字数は300文字です。";
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 if ($line_count >= 5 && !$is_aa) {
-    $response["message"] = "複数行のAA（アスキーアート）を送信する場合は、メッセージの先頭に /a を付けてください。";
-    echo json_encode($response, JSON_UNESCAPED_UNICODE);
-    exit;
+    if (isset($decoded['isShare']) && $decoded['isShare'] === 'true') {
+        $response["message"] = "改行が多すぎます（最大4行）。アスキーアートは許可されていません。";
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        exit;
+    } else {
+        $response["message"] = "複数行のAA（アスキーアート）を送信する場合は、メッセージの先頭に /a を付けてください。";
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+$imageUrl = null;
+if ($is_multipart && isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+    $uploadDir = __DIR__ . "/uploads/";
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0777, true);
+        @chmod($uploadDir, 0777);
+    }
+    
+    // Check if it's an image
+    $check = getimagesize($_FILES['image']['tmp_name']);
+    if($check !== false) {
+        $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+        $filename = uniqid('img_') . '.' . $ext;
+        $targetPath = $uploadDir . $filename;
+        if (move_uploaded_file($_FILES['image']['tmp_name'], $targetPath)) {
+            @chmod($targetPath, 0666);
+            $imageUrl = "uploads/" . rawurlencode($filename);
+        } else {
+            $response["message"] = "画像の保存に失敗しました。";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    } else {
+        $response["message"] = "画像ファイルのみアップロード可能です。";
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 }
 
 $clientId = isset($decoded['clientId']) ? trim($decoded['clientId']) : null;
@@ -107,13 +158,14 @@ $new_message = [
     'message' => $message,
     'gameId' => $gameId,
     'timestamp' => $timestamp,
-    'clientId' => $clientId
+    'clientId' => $clientId,
+    'imageUrl' => $imageUrl
 ];
 
 $existing_messages = [];
 $result = false;
 
-$lock_file = __DIR__ . '/chat.lock';
+$lock_file = __DIR__ . '/share.lock';
 $fp_lock = fopen($lock_file, 'w');
 
 if ($fp_lock && flock($fp_lock, LOCK_EX)) {
