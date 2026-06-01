@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -1405,7 +1405,7 @@
             };
         }
 
-        function showChatNotification(msg) {
+        function showChatNotification(msg, isShare = false) {
             const container = document.getElementById('chat-notification-container');
             const notif = document.createElement('div');
             notif.className = 'chat-notification';
@@ -1416,6 +1416,7 @@
             notif.dataset.timestamp = msg.timestamp;
             notif.dataset.name = name;
             notif.dataset.messageText = msg.message;
+            if (isShare) notif.dataset.isShare = 'true';
             
             let gameHtml = '';
             if (msg.gameId) {
@@ -2941,6 +2942,35 @@
                 if (res.ok) {
                     const newMessages = await res.json();
                     if (JSON.stringify(newMessages) !== JSON.stringify(shareMessages)) {
+                        // Remove notifications for deleted messages
+                        document.querySelectorAll('.chat-notification').forEach(notif => {
+                            const ts = parseInt(notif.dataset.timestamp);
+                            const nName = notif.dataset.name;
+                            const nMsg = notif.dataset.messageText;
+                            if (ts && !newMessages.some(m => 
+                                (m.timestamp === ts) || 
+                                (m.name === nName && m.message === nMsg && Math.abs(m.timestamp - ts) < 60000)
+                            ) && notif.dataset.isShare === 'true') {
+                                notif.classList.add('hiding');
+                                setTimeout(() => notif.remove(), 300);
+                            }
+                        });
+
+                        // Check for new messages from others
+                        if (initialShareLoaded) {
+                            const newItems = newMessages.filter(m => !shareMessages.some(old => old.id === m.id) && m.clientId !== myClientId);
+                            newItems.forEach(msg => {
+                                showChatNotification(msg, true);
+                            });
+                        } else {
+                            let dismissed = JSON.parse(localStorage.getItem('dismissedShareNotifs') || '[]');
+                            const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+                            newMessages.forEach(msg => {
+                                if (msg.clientId !== myClientId && !dismissed.includes(msg.id) && msg.timestamp > oneDayAgo) {
+                                    showChatNotification(msg, true);
+                                }
+                            });
+                        }
                         shareMessages = newMessages;
                         initialShareLoaded = true;
                         renderShare();
@@ -3144,7 +3174,7 @@
                 const data = await response.json();
                 
                 if (data.status === 'success') {
-                    showChatNotification(tempMsg);
+                    showChatNotification(tempMsg, true);
                     localStorage.setItem('chat_name', name);
                     document.getElementById('share-name').value = name;
                     const msgInput = document.getElementById('share-message');
