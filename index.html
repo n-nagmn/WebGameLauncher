@@ -1261,20 +1261,27 @@
         <div class="chat-input-area" style="flex: 1; overflow-y: auto; justify-content: flex-start; gap: 20px;">
             <div class="form-group" style="margin: 0; padding: 0;">
                 <label for="share-name" style="display: block; margin-bottom: 8px; font-size: 13px; color: #ccc;">名前 (省略可)</label>
-                <input type="text" id="share-name" placeholder="名無しさん" autocomplete="off" maxlength="30" style="width: 100%; padding: 10px 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(0,0,0,0.3); color: white; outline: none; font-size: 14px;">
+                <input type="text" id="share-name" placeholder="名無しさん" autocomplete="off" maxlength="30" style="width: 100%; padding: 10px 14px; outline: none; border-radius: 6px;">
             </div>
             
             <div class="form-group" style="margin: 0; padding: 0;">
                 <label for="share-message" style="display: block; margin-bottom: 8px; font-size: 13px; color: #ccc;">メッセージ (最大300文字) *</label>
-                <textarea id="share-message" placeholder="メッセージを入力..." rows="6" maxlength="300" required oninput="document.getElementById('share-message-count').innerText = this.value.length + ' / 300'" style="width: 100%; padding: 10px 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(0,0,0,0.3); color: white; outline: none; font-size: 14px; resize: none;"></textarea>
+                <textarea id="share-message" placeholder="メッセージを入力... (画像はここにドラッグ＆ドロップでも可)" rows="6" maxlength="300" required oninput="document.getElementById('share-message-count').innerText = this.value.length + ' / 300'" style="width: 100%; padding: 10px 14px; outline: none; border-radius: 6px; resize: none;"></textarea>
                 <div style="font-size: 11px; color: #888; text-align: right; margin-top: 4px;" id="share-message-count">0 / 300</div>
             </div>
             
             <div class="form-group" style="margin: 0; padding: 0;">
                 <label for="share-image" style="display: block; margin-bottom: 8px; font-size: 13px; color: #ccc;">画像 (省略可)</label>
-                <input type="file" id="share-image" accept="image/*" onchange="if(this.files[0]){ const r = new FileReader(); r.onload = e => { document.getElementById('share-image-preview-img').src = e.target.result; document.getElementById('share-image-preview').style.display = 'block'; }; r.readAsDataURL(this.files[0]); } else { document.getElementById('share-image-preview').style.display = 'none'; }" style="width: 100%; color: #eee; font-size: 13px;">
-                <div id="share-image-preview" style="margin-top: 15px; display: none;">
-                    <img id="share-image-preview-img" style="max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);" />
+                <div style="position: relative;">
+                    <label for="share-image" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        画像を選択
+                    </label>
+                    <input type="file" id="share-image" accept="image/*" onchange="App.handleShareImageSelect()" style="display: none;">
+                </div>
+                <div id="share-image-preview" style="margin-top: 15px; display: none; position: relative; width: max-content;">
+                    <img id="share-image-preview-img" style="max-height: 150px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);" />
+                    <button onclick="App.clearShareImage()" style="position: absolute; top: -8px; right: -8px; background: #ff5252; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">×</button>
                 </div>
             </div>
 
@@ -2757,6 +2764,7 @@
                     this.style.overflowY = this.scrollHeight > maxH ? 'auto' : 'hidden';
                 });
             }
+            setupShareDragAndDrop();
             els.gameModal = document.getElementById('game-modal');
             els.settingsModal = document.getElementById('settings-modal');
             els.searchInput = document.getElementById('search-input');
@@ -2938,6 +2946,47 @@
         function closeShare() {
             document.getElementById('share-sidebar').classList.remove('active');
         }
+        
+        function handleShareImageSelect() {
+            const input = document.getElementById('share-image');
+            if(input.files && input.files[0]){
+                const r = new FileReader();
+                r.onload = e => {
+                    document.getElementById('share-image-preview-img').src = e.target.result;
+                    document.getElementById('share-image-preview').style.display = 'block';
+                };
+                r.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        function clearShareImage() {
+            document.getElementById('share-image').value = '';
+            document.getElementById('share-image-preview').style.display = 'none';
+        }
+        
+        function setupShareDragAndDrop() {
+            const msgInput = document.getElementById('share-message');
+            const fileInput = document.getElementById('share-image');
+            if(!msgInput || !fileInput) return;
+            msgInput.addEventListener('dragover', e => {
+                e.preventDefault();
+                msgInput.style.background = 'rgba(255,255,255,0.1)';
+            });
+            msgInput.addEventListener('dragleave', e => {
+                e.preventDefault();
+                msgInput.style.background = '';
+            });
+            msgInput.addEventListener('drop', e => {
+                e.preventDefault();
+                msgInput.style.background = '';
+                if(e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    if(e.dataTransfer.files[0].type.startsWith('image/')) {
+                        fileInput.files = e.dataTransfer.files;
+                        handleShareImageSelect();
+                    }
+                }
+            });
+        }
 
         async function submitShare() {
             const nameInput = document.getElementById('share-name');
@@ -2964,7 +3013,7 @@
             const formData = new FormData();
             formData.append('name', name);
             formData.append('message', message);
-            formData.append('clientId', clientId);
+            formData.append('clientId', myClientId);
             formData.append('isShare', 'true');
             if (file) {
                 formData.append('image', file);
@@ -3010,7 +3059,7 @@
             handleCategoryDragStart, handleCategoryDragOver, handleCategoryDrop, handleCategoryDragEnd,
             openChat, closeChat, sendChatMessage, openChatGame, deleteChatMessage,
             loadServerBackups, createServerBackup, restoreServerBackup, deleteServerBackup,
-            openShare, closeShare, submitShare
+            openShare, closeShare, submitShare, handleShareImageSelect, clearShareImage
         };
     })();
 
