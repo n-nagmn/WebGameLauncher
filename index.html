@@ -1257,26 +1257,20 @@
             <h3><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-0.15em; margin-right: 8px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> 投稿 (Share)</h3>
             <button class="chat-close-btn" onclick="App.closeShare()" title="閉じる">×</button>
         </div>
-        
-        <div class="chat-messages" id="share-preview-area" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; color: #888;">
-            <div id="share-image-preview-container" style="display: none; position: relative;">
+        <div class="chat-messages" id="share-preview-area" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div id="share-image-preview-container" style="display: none; position: relative; margin: 20px;">
                 <img id="share-image-preview-img" style="max-width: 100%; max-height: 250px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);" />
                 <button onclick="App.clearShareImage()" style="position: absolute; top: -10px; right: -10px; background: #ff5252; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">×</button>
             </div>
-            <div id="share-drag-hint" style="font-size: 14px; margin-top: 15px;">画像をここにドラッグ＆ドロップできます</div>
         </div>
-        
-        <div class="chat-input-area" id="share-input-container">
-            <input type="text" id="share-name" placeholder="名前 (省略可)" maxlength="30">
-            <div style="position: relative;">
-                <textarea id="share-message" placeholder="メッセージを入力... (最大300文字)" rows="2" maxlength="300" oninput="document.getElementById('share-message-count').innerText = this.value.length + ' / 300'" style="width: 100%; padding-right: 36px; box-sizing: border-box; resize: none;"></textarea>
-                <label for="share-image" style="position: absolute; right: 8px; bottom: 8px; cursor: pointer; color: #888; font-size: 18px; transition: color 0.2s;" title="画像を添付" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                </label>
-                <input type="file" id="share-image" accept="image/*" onchange="App.handleShareImageSelect()" style="display: none;">
-            </div>
-            <div style="font-size: 11px; color: #888; text-align: right; margin-top: 2px;" id="share-message-count">0 / 300</div>
-            <button class="btn-save" onclick="App.submitShare()" id="share-submit-btn" style="width: 100%; justify-content: center;">投稿する</button>
+        <div class="chat-input-area">
+            <input type="text" id="share-name" placeholder="名前 (省略可)">
+            <select id="share-game-select">
+                <option value="">ゲーム指定なし</option>
+            </select>
+            <textarea id="share-message" placeholder="メッセージを入力... (画像はドラッグ＆ドロップで添付)" rows="2"></textarea>
+            <input type="file" id="share-image" accept="image/*" onchange="App.handleShareImageSelect()" style="display: none;">
+            <button class="btn-save" style="width: 100%; justify-content: center;" onclick="App.submitShare()" id="share-submit-btn">送信</button>
         </div>
     </div>
 
@@ -2926,7 +2920,6 @@
         function openShare() {
             document.getElementById('share-name').value = document.getElementById('chat-name').value || localStorage.getItem('chat_name') || '';
             document.getElementById('share-message').value = '';
-            document.getElementById('share-message-count').innerText = '0 / 300';
             clearShareImage();
             document.getElementById('share-sidebar').classList.add('active');
         }
@@ -2942,7 +2935,6 @@
                 r.onload = e => {
                     document.getElementById('share-image-preview-img').src = e.target.result;
                     document.getElementById('share-image-preview-container').style.display = 'block';
-                    document.getElementById('share-drag-hint').style.display = 'none';
                 };
                 r.readAsDataURL(input.files[0]);
             }
@@ -2951,7 +2943,6 @@
         function clearShareImage() {
             document.getElementById('share-image').value = '';
             document.getElementById('share-image-preview-container').style.display = 'none';
-            document.getElementById('share-drag-hint').style.display = 'block';
         }
         
         function setupShareDragAndDrop() {
