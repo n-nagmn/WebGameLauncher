@@ -2927,8 +2927,7 @@
             document.getElementById('share-name').value = document.getElementById('chat-name').value || localStorage.getItem('chat_name') || '';
             document.getElementById('share-message').value = '';
             document.getElementById('share-message-count').innerText = '0 / 300';
-            document.getElementById('share-image').value = '';
-            document.getElementById('share-image-preview').style.display = 'none';
+            clearShareImage();
             document.getElementById('share-sidebar').classList.add('active');
         }
 
