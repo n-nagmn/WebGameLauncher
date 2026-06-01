@@ -1486,11 +1486,12 @@
                 e.stopPropagation();
                 notif.classList.add('hiding');
                 setTimeout(() => notif.remove(), 300);
-                let dismissed = JSON.parse(localStorage.getItem('dismissedChatNotifs') || '[]');
+                const storageKey = isShare ? 'dismissedShareNotifs' : 'dismissedChatNotifs';
+                let dismissed = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 if (!dismissed.includes(msg.id)) {
                     dismissed.push(msg.id);
                     if (dismissed.length > 200) dismissed = dismissed.slice(-200);
-                    localStorage.setItem('dismissedChatNotifs', JSON.stringify(dismissed));
+                    localStorage.setItem(storageKey, JSON.stringify(dismissed));
                 }
                 if (msg.gameId) {
                     openChatGame(msg.gameId);
