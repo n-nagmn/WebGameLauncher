@@ -1024,6 +1024,19 @@
             z-index: 1000;
         }
 
+        #server-backup-select {
+            padding: 4px;
+        }
+        #server-backup-select option {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        body.light-mode #server-backup-select option {
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             header { padding: 0 20px; }
@@ -2687,7 +2700,7 @@
                     if (data.backups.length === 0) {
                         select.innerHTML = '<option value="">バックアップがありません</option>';
                     } else {
-                        let html = '<option value="">復元するバックアップを選択...</option>';
+                        let html = '';
                         data.backups.forEach(b => {
                             const dateStr = new Date(b.time * 1000).toLocaleString();
                             const sizeKb = Math.round(b.size / 1024);
@@ -2755,7 +2768,6 @@
                 showToast('削除するバックアップを選択してください', 'warning');
                 return;
             }
-            if (!confirm(filenames.length + '件のバックアップを削除しますか？')) return;
             try {
                 let successCount = 0;
                 for (const filename of filenames) {
