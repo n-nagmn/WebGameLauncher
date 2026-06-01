@@ -3084,7 +3084,7 @@
                         </div>
                         ${gameHtml}
                         ${(() => { let msgText = msg.message || ''; if (msgText === '') return ''; if (msgText.toLowerCase().startsWith('/a')) { return `<div class="chat-message-text aa-font">${escapeHtml(msgText.replace(/^\/a(?:\r?\n| )?/i, ''))}</div>`; } return `<div class="chat-message-text">${escapeHtml(msgText)}</div>`; })()}
-                        ${msg.imageUrl ? `<div style="margin-top: 8px;"><a href="${escapeHtml(msg.imageUrl)}" target="_blank"><img src="${escapeHtml(msg.imageUrl)}" style="max-width: 50%; border-radius: 8px; border: 1px solid rgba(128,128,128,0.2);" alt="Image"></a></div>` : ''}
+                        ${msg.imageUrl ? `<div style="margin-top: 8px;"><img src="${escapeHtml(msg.imageUrl)}" onclick="App.openImageModal('${escapeHtml(msg.imageUrl)}')" style="max-width: 50%; border-radius: 8px; border: 1px solid rgba(128,128,128,0.2); cursor: zoom-in;" alt="Image"></div>` : ''}
                     </div>
                 `;
             });
@@ -3145,6 +3145,23 @@
         function closeShare() {
             document.getElementById('share-sidebar').classList.remove('active');
             document.body.classList.remove('chat-open');
+        }
+
+        function openImageModal(url) {
+            const modal = document.getElementById('image-modal');
+            const img = document.getElementById('image-modal-img');
+            img.src = url;
+            modal.style.display = 'flex';
+            setTimeout(() => modal.style.opacity = '1', 10);
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('image-modal');
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.getElementById('image-modal-img').src = '';
+            }, 300);
         }
         
         function handleShareImageSelect() {
@@ -3274,12 +3291,18 @@
             handleCategoryDragStart, handleCategoryDragOver, handleCategoryDrop, handleCategoryDragEnd,
             openChat, closeChat, sendChatMessage, openChatGame, deleteChatMessage,
             loadServerBackups, createServerBackup, restoreServerBackup, deleteServerBackup,
-            openShare, closeShare, submitShare, handleShareImageSelect, clearShareImage, deleteShareMessage
+            openShare, closeShare, submitShare, handleShareImageSelect, clearShareImage, deleteShareMessage,
+            openImageModal, closeImageModal
         };
     })();
 
     document.addEventListener('DOMContentLoaded', App.init);
     </script>
+
+    <!-- Image Lightbox Modal -->
+    <div class="modal" id="image-modal" role="dialog" aria-modal="true" aria-label="画像拡大" onclick="App.closeImageModal()">
+        <img id="image-modal-img" src="" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); cursor: zoom-out;">
+    </div>
 </body>
 </html>
 
