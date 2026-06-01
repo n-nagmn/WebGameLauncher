@@ -1653,9 +1653,8 @@
                             });
                         } else {
                             let dismissed = JSON.parse(localStorage.getItem('dismissedChatNotifs') || '[]');
-                            const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
                             newMessages.forEach(msg => {
-                                if (msg.clientId !== myClientId && !dismissed.includes(msg.id) && msg.timestamp > oneDayAgo) {
+                                if (msg.clientId !== myClientId && !dismissed.includes(msg.id)) {
                                     showChatNotification(msg);
                                 }
                             });
@@ -3034,9 +3033,8 @@
                             });
                         } else {
                             let dismissed = JSON.parse(localStorage.getItem('dismissedShareNotifs') || '[]');
-                            const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
                             newMessages.forEach(msg => {
-                                if (msg.clientId !== myClientId && !dismissed.includes(msg.id) && msg.timestamp > oneDayAgo) {
+                                if (msg.clientId !== myClientId && !dismissed.includes(msg.id)) {
                                     showChatNotification(msg, true);
                                 }
                             });
