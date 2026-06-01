@@ -1640,7 +1640,7 @@
                                 
                                 <span>${timeStr}</span>
                             </div>
-                            ${msg.clientId === myClientId ? `<button onclick="App.deleteChatMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>` : ''}
+                            <button onclick="App.deleteChatMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>
                         </div>
                         ${gameHtml}
                         ${msg.imageUrl ? `<div style="margin-top: 8px;"><a href="${escapeHtml(msg.imageUrl)}" target="_blank"><img src="${escapeHtml(msg.imageUrl)}" style="max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);" alt="Image"></a></div>` : ''}
@@ -2952,7 +2952,7 @@
                                 
                                 <span>${timeStr}</span>
                             </div>
-                            ${msg.clientId === myClientId ? `<button onclick="App.deleteShareMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>` : ''}
+                            <button onclick="App.deleteShareMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>
                         </div>
                         ${gameHtml}
                         ${msg.imageUrl ? `<div style="margin-top: 8px;"><a href="${escapeHtml(msg.imageUrl)}" target="_blank"><img src="${escapeHtml(msg.imageUrl)}" style="max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);" alt="Image"></a></div>` : ''}
@@ -3082,6 +3082,19 @@
             btn.disabled = true;
             btn.innerText = '送信中...';
             
+            // Optimistic update
+            const tempMsg = {
+                id: 'temp_share_' + Date.now(),
+                name: name,
+                message: message,
+                gameId: gameId,
+                timestamp: Date.now(),
+                clientId: myClientId,
+                imageUrl: file ? URL.createObjectURL(file) : null
+            };
+            shareMessages.push(tempMsg);
+            renderShare();
+            
             const formData = new FormData();
             formData.append('name', name);
             formData.append('message', message);
@@ -3101,7 +3114,7 @@
                 const data = await response.json();
                 
                 if (data.status === 'success') {
-                    showChatNotification(data.data);
+                    showChatNotification(tempMsg);
                     localStorage.setItem('chat_name', name);
                     document.getElementById('share-name').value = name;
                     const msgInput = document.getElementById('share-message');

@@ -60,7 +60,7 @@ if ($action === 'delete') {
             return (!isset($msg['timestamp']) || $msg['timestamp'] !== $timestamp_to_delete);
         }));
         
-        file_put_contents($file_path, json_encode($chat_data, JSON_UNESCAPED_UNICODE));
+        @file_put_contents($file_path, json_encode($chat_data, JSON_UNESCAPED_UNICODE));
         echo json_encode(["status" => "success"]);
     } else {
         http_response_code(400);
@@ -135,7 +135,7 @@ if ($is_multipart && isset($_FILES['image']) && $_FILES['image']['error'] === UP
         $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
         $filename = uniqid('img_') . '.' . $ext;
         $targetPath = $uploadDir . $filename;
-        if (move_uploaded_file($_FILES['image']['tmp_name'], $targetPath)) {
+        if (@move_uploaded_file($_FILES['image']['tmp_name'], $targetPath)) {
             @chmod($targetPath, 0666);
             $imageUrl = "uploads/" . rawurlencode($filename);
         } else {
@@ -166,7 +166,7 @@ $existing_messages = [];
 $result = false;
 
 $lock_file = __DIR__ . '/share.lock';
-$fp_lock = fopen($lock_file, 'w');
+$fp_lock = @fopen($lock_file, 'w');
 
 if ($fp_lock && flock($fp_lock, LOCK_EX)) {
     if (file_exists($file_path)) {
@@ -183,7 +183,7 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
     
     $json_output = json_encode($existing_messages, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     if ($json_output !== false) {
-        file_put_contents($file_path, $json_output);
+        @file_put_contents($file_path, $json_output);
         $result = true;
     }
     flock($fp_lock, LOCK_UN);
@@ -199,7 +199,7 @@ if ($result !== false) {
     $response["data"] = $new_message;
     http_response_code(200);
 } else {
-    $response["message"] = "chat.json への書き込みに失敗しました。";
+    $response["message"] = "share.json への書き込みに失敗しました。";
     http_response_code(500);
 }
 

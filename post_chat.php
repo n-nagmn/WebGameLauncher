@@ -54,7 +54,7 @@ if ($action === 'delete') {
             return (!isset($msg['timestamp']) || $msg['timestamp'] !== $timestamp_to_delete);
         }));
         
-        file_put_contents($file_path, json_encode($chat_data, JSON_UNESCAPED_UNICODE));
+        @file_put_contents($file_path, json_encode($chat_data, JSON_UNESCAPED_UNICODE));
         echo json_encode(["status" => "success"]);
     } else {
         http_response_code(400);
@@ -114,7 +114,7 @@ $existing_messages = [];
 $result = false;
 
 $lock_file = __DIR__ . '/chat.lock';
-$fp_lock = fopen($lock_file, 'w');
+$fp_lock = @fopen($lock_file, 'w');
 
 if ($fp_lock && flock($fp_lock, LOCK_EX)) {
     if (file_exists($file_path)) {
@@ -131,7 +131,7 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
     
     $json_output = json_encode($existing_messages, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     if ($json_output !== false) {
-        file_put_contents($file_path, $json_output);
+        @file_put_contents($file_path, $json_output);
         $result = true;
     }
     flock($fp_lock, LOCK_UN);
