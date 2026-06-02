@@ -3520,6 +3520,20 @@
         });
 
         async function deleteChatMessage(timestamp) {
+            // Remove notification immediately
+            document.querySelectorAll('.chat-notification').forEach(notif => {
+                if (notif.id.startsWith('notif-chat_') && parseInt(notif.dataset.timestamp) === timestamp) {
+                    notif.classList.add('hiding');
+                    setTimeout(() => notif.remove(), 300);
+                    let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+                    const notifId = notif.id.replace('notif-', '');
+                    if (notifId) {
+                        delete activeNotifs[notifId];
+                        localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs));
+                    }
+                }
+            });
+
             try {
                 const res = await fetch('./post_chat.php', {
                     method: 'POST',
@@ -3745,6 +3759,7 @@
     <div id="reaction-picker" style="display: none; position: fixed; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1000; gap: 4px; flex-wrap: wrap; max-width: 200px;"></div>
 </body>
 </html>
+
 
 
 
