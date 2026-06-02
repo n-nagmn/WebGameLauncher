@@ -212,11 +212,9 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         exit;
     }
 
-    $temp_file = $file_path . '.tmp';
-    $result = file_put_contents($temp_file, $json_output);
+    $result = @file_put_contents($file_path, $json_output);
     if ($result !== false) {
-        @chmod($temp_file, 0666);
-        @rename($temp_file, $file_path);
+        @chmod($file_path, 0666);
         
         $response["status"] = "success";
         $response["message"] = "保存成功！";

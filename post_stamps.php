@@ -59,11 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lock_file = $stamps_file . '.lock';
         $lock_fp = fopen($lock_file, 'w');
         if (flock($lock_fp, LOCK_EX)) {
-            $temp_file = $stamps_file . '.tmp';
-            if (file_put_contents($temp_file, $encoded) !== false) {
-                @chmod($temp_file, 0666);
-                @rename($temp_file, $stamps_file);
-            }
+            @file_put_contents($stamps_file, $encoded);
+            @chmod($stamps_file, 0666);
             flock($lock_fp, LOCK_UN);
         }
         fclose($lock_fp);

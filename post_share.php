@@ -89,11 +89,8 @@ if ($action === 'react') {
     }
     
     if ($updated) {
-        $temp_file = $file_path . '.tmp';
-        if (@file_put_contents($temp_file, json_encode($chat, JSON_UNESCAPED_UNICODE)) !== false) {
-            @chmod($temp_file, 0666);
-            @rename($temp_file, $file_path);
-        }
+        @file_put_contents($file_path, json_encode($chat, JSON_UNESCAPED_UNICODE));
+        @chmod($file_path, 0666);
         echo json_encode(["status" => "success"]);
     } else {
         http_response_code(404);
@@ -115,11 +112,8 @@ if ($action === 'delete') {
             return (!isset($msg['timestamp']) || $msg['timestamp'] !== $timestamp_to_delete);
         }));
         
-        $temp_file = $file_path . '.tmp';
-        if (@file_put_contents($temp_file, json_encode($chat_data, JSON_UNESCAPED_UNICODE)) !== false) {
-            @chmod($temp_file, 0666);
-            @rename($temp_file, $file_path);
-        }
+        @file_put_contents($file_path, json_encode($chat_data, JSON_UNESCAPED_UNICODE));
+        @chmod($file_path, 0666);
         echo json_encode(["status" => "success"]);
     } else {
         http_response_code(400);
@@ -227,35 +221,31 @@ $existing_messages = [];
 $result = false;
 
 $lock_file = __DIR__ . '/share.lock';
-$fp_lock = @fopen($lock_file, 'w');
+$fp_lock = @fopen($lock_file, 'c');
+@chmod($lock_file, 0666);
+$locked = $fp_lock && flock($fp_lock, LOCK_EX);
 
-if ($fp_lock && flock($fp_lock, LOCK_EX)) {
-    if (file_exists($file_path)) {
-        $existing_raw = file_get_contents($file_path);
-        $existing_messages = json_decode($existing_raw, true) ?: [];
-    }
-    
-    array_push($existing_messages, $new_message);
-    
-    // Keep only the last $max_messages
-    if (count($existing_messages) > $max_messages) {
-        $existing_messages = array_slice($existing_messages, -$max_messages);
-    }
-    
-    $json_output = json_encode($existing_messages, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    if ($json_output !== false) {
-        $temp_file = $file_path . '.tmp';
-        if (@file_put_contents($temp_file, $json_output) !== false) {
-            @chmod($temp_file, 0666);
-            @rename($temp_file, $file_path);
-            $result = true;
-        }
-    }
-    flock($fp_lock, LOCK_UN);
+// Proceed even without lock (fallback for permission issues)
+if (file_exists($file_path)) {
+    $existing_raw = file_get_contents($file_path);
+    $existing_messages = json_decode($existing_raw, true) ?: [];
 }
-if ($fp_lock) {
-    fclose($fp_lock);
+
+array_push($existing_messages, $new_message);
+
+// Keep only the last $max_messages
+if (count($existing_messages) > $max_messages) {
+    $existing_messages = array_slice($existing_messages, -$max_messages);
 }
+
+$json_output = json_encode($existing_messages, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+if ($json_output !== false) {
+    $result = @file_put_contents($file_path, $json_output);
+    @chmod($file_path, 0666);
+}
+
+if ($locked) { flock($fp_lock, LOCK_UN); }
+if ($fp_lock) { fclose($fp_lock); }
 
 if ($result !== false) {
     @chmod($file_path, 0666);
