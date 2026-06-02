@@ -1523,6 +1523,9 @@
             }
 
             notif.innerHTML = `
+                ${msg.replyTo ? `<div class="replied-message" style="margin-bottom: 4px;">
+                    <strong>@${escapeHtml(msg.replyTo.name)}</strong>&nbsp; ${escapeHtml(msg.replyTo.message)}
+                </div>` : ''}
                 <div class="chat-notification-header" style="position: relative; padding-right: 20px;">
                     <span class="chat-notification-name">${escapeHtml(name)}</span>
                     <span>${timeStr}</span>
