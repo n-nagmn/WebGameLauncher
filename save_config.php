@@ -159,9 +159,11 @@ if ($json_output === false) {
     exit;
 }
 
-$result = file_put_contents($file_path, $json_output, LOCK_EX);
+$temp_file = $file_path . '.tmp';
+$result = file_put_contents($temp_file, $json_output, LOCK_EX);
 if ($result !== false) {
-    @chmod($file_path, 0644);
+    @chmod($temp_file, 0666);
+    @rename($temp_file, $file_path);
     $response["status"] = "success";
     $response["message"] = "設定を保存しました";
     $response["backup"] = $backup_success ? 'created' : 'skipped';

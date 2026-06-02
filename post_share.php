@@ -89,7 +89,11 @@ if ($action === 'react') {
     }
     
     if ($updated) {
-        @file_put_contents($file_path, json_encode($chat, JSON_UNESCAPED_UNICODE));
+        $temp_file = $file_path . '.tmp';
+        if (@file_put_contents($temp_file, json_encode($chat, JSON_UNESCAPED_UNICODE)) !== false) {
+            @chmod($temp_file, 0666);
+            @rename($temp_file, $file_path);
+        }
         echo json_encode(["status" => "success"]);
     } else {
         http_response_code(404);
@@ -111,7 +115,11 @@ if ($action === 'delete') {
             return (!isset($msg['timestamp']) || $msg['timestamp'] !== $timestamp_to_delete);
         }));
         
-        @file_put_contents($file_path, json_encode($chat_data, JSON_UNESCAPED_UNICODE));
+        $temp_file = $file_path . '.tmp';
+        if (@file_put_contents($temp_file, json_encode($chat_data, JSON_UNESCAPED_UNICODE)) !== false) {
+            @chmod($temp_file, 0666);
+            @rename($temp_file, $file_path);
+        }
         echo json_encode(["status" => "success"]);
     } else {
         http_response_code(400);
@@ -236,8 +244,12 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
     
     $json_output = json_encode($existing_messages, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     if ($json_output !== false) {
-        @file_put_contents($file_path, $json_output);
-        $result = true;
+        $temp_file = $file_path . '.tmp';
+        if (@file_put_contents($temp_file, $json_output) !== false) {
+            @chmod($temp_file, 0666);
+            @rename($temp_file, $file_path);
+            $result = true;
+        }
     }
     flock($fp_lock, LOCK_UN);
 }

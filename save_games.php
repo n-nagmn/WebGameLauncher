@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Web Game Launcher Pro - Game Data Save Endpoint (Fixed)
  */
@@ -212,8 +212,11 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         exit;
     }
 
-    $result = file_put_contents($file_path, $json_output);
+    $temp_file = $file_path . '.tmp';
+    $result = file_put_contents($temp_file, $json_output);
     if ($result !== false) {
+        @chmod($temp_file, 0666);
+        @rename($temp_file, $file_path);
         
         $response["status"] = "success";
         $response["message"] = "保存成功！";

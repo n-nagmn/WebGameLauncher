@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -837,7 +837,7 @@
             border-top: 1px solid rgba(255,255,255,0.08);
         }
 
-        button {
+        button, .btn {
             padding: 10px 20px;
             border: none;
             border-radius: 6px;
@@ -1306,12 +1306,17 @@
                     <div id="settings-category-list"></div>
                 </div>
 
-                <div class="sub-section">
-                    <h4>スタンプ（全体共有）</h4>
+                <div class="sub-section" id="stamp-settings-section">
+                    <h4>スタンプ</h4>
                     <p>チャット等で使えるリアクションスタンプを追加・削除します。</p>
-                    <div class="form-group" style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px; flex-direction: row; align-items: center;">
-                        <input type="text" id="new-stamp-input" placeholder="新しいスタンプ (例: ✨, 乙, 草)" style="flex-grow: 1; padding: 10px 14px; margin: 0;">
-                        <button onclick="App.addCustomStamp()" class="btn-outline" style="white-space: nowrap; padding: 10px 14px; margin: 0;">追加</button>
+                    <div class="form-group" style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px; flex-direction: row; align-items: stretch;">
+                        <input type="text" id="new-stamp-input" placeholder="新しいスタンプ (例: ✨, 乙, 草)" style="flex-grow: 1; padding: 10px 14px; margin: 0; box-sizing: border-box;">
+                        <button onclick="App.addCustomStamp()" class="btn-outline" style="white-space: nowrap; padding: 10px 14px; margin: 0; display: flex; align-items: center; box-sizing: border-box;">追加</button>
+                        <label class="btn btn-outline" style="white-space: nowrap; padding: 10px 14px; margin: 0; cursor: pointer; display: flex; align-items: center; box-sizing: border-box; gap: 4px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            画像
+                            <input type="file" accept="image/*" style="display:none;" onchange="App.addCustomImageStamp(event)">
+                        </label>
                     </div>
                     <div id="custom-stamps-list" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
                 </div>
@@ -1459,7 +1464,7 @@
             const picker = document.getElementById('reaction-picker');
             const allStamps = [...defaultStamps, ...customStamps];
             picker.innerHTML = allStamps.map(s => `
-                <button class="picker-emoji" onclick="App.reactMessage('${escapeHtml(s)}')" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${escapeHtml(s)}</button>
+                <button class="picker-emoji" onclick="App.reactMessage('${escapeHtml(s)}')" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;transition:transform 0.2s; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${App.renderStampContent(s)}</button>
             `).join('');
         }
 
@@ -1467,11 +1472,48 @@
             const list = document.getElementById('custom-stamps-list');
             if(!list) return;
             list.innerHTML = customStamps.map((s, index) => `
-                <div class="stamp-chip">
-                    <span>${escapeHtml(s)}</span>
-                    <button onclick="App.deleteCustomStamp(${index})" style="background: none; border: none; color: #ff5252; cursor: pointer; padding: 0 4px;">&times;</button>
+                <div class="stamp-chip" style="display: flex; align-items: center; gap: 4px; padding: 4px 10px; background: rgba(128,128,128,0.1); border: 1px solid rgba(128,128,128,0.2); border-radius: 20px; font-size: 16px;">
+                    <span>${App.renderStampContent(s)}</span>
+                    <button onclick="App.deleteCustomStamp(${index})" style="background: none; border: none; color: #ff5252; cursor: pointer; padding: 0 4px; display: flex; align-items: center; justify-content: center;">&times;</button>
                 </div>
             `).join('');
+        }
+
+                function renderStampContent(s) {
+            if (s.startsWith('uploads/') || s.startsWith('http://') || s.startsWith('https://')) {
+                return `<img src="${escapeHtml(s)}" style="max-height: 24px; max-width: 24px; vertical-align: middle; border-radius: 4px;" alt="stamp">`;
+            }
+            return escapeHtml(s);
+        }
+
+        async function uploadCustomImageStamp(file) {
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('image', file);
+            try {
+                showToast('画像をアップロード中...', 'info');
+                const res = await fetch('./post_stamps.php?action=upload_image', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    customStamps.push(data.url);
+                    await saveCustomStamps();
+                    showToast('画像スタンプを追加しました', 'success');
+                } else {
+                    showToast(data.message || '失敗しました', 'error');
+                }
+            } catch(e) {
+                console.error(e);
+                showToast('エラー', 'error');
+            }
+        }
+
+        function addCustomImageStamp(event) {
+            const file = event.target.files[0];
+            if (file) uploadCustomImageStamp(file);
+            event.target.value = '';
         }
 
         async function addCustomStamp() {
@@ -1858,7 +1900,7 @@
                                 const count = msg.reactions[emoji].length;
                                 const reacted = msg.reactions[emoji].includes(myClientId);
                                 if (count === 0) return '';
-                                return `<button class="reaction-btn ${reacted ? 'reacted' : ''}" onclick="App.reactMessage('${emoji}', ${msg.timestamp}, false)">${emoji} <span>${count}</span></button>`;
+                                return `<button class="reaction-btn ${reacted ? 'reacted' : ''}" onclick="App.reactMessage('${emoji}', ${msg.timestamp}, false)">${App.renderStampContent(emoji)} <span>${count}</span></button>`;
                             }).join('')}
                             <button class="add-reaction-btn reaction-btn" style="width: 24px; justify-content: center;" onclick="App.toggleReactionPicker(${msg.timestamp}, false, this, event)">+</button>
                             <button class="reaction-btn" style="width: 24px; justify-content: center;" onclick="App.startReply(false, ${msg.timestamp})" title="返信">↩</button>
@@ -2788,7 +2830,7 @@
 
         function exportData() {
             const a = document.createElement("a");
-            a.href = './manage_backups.php?action=download';
+            a.href = './manage_backups.php?action=export';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -3007,6 +3049,63 @@
                     const newHeight = Math.min(this.scrollHeight, maxH);
                     this.style.height = newHeight + 'px';
                     this.style.overflowY = this.scrollHeight > maxH ? 'auto' : 'hidden';
+                });
+            }
+            
+            const stampSettingsSection = document.getElementById('stamp-settings-section');
+            
+            window.addEventListener('paste', e => {
+                if (els.settingsModal && els.settingsModal.style.display !== 'none') {
+                    if (e.clipboardData && e.clipboardData.items) {
+                        for (let i = 0; i < e.clipboardData.items.length; i++) {
+                            if (e.clipboardData.items[i].type.startsWith('image/')) {
+                                const file = e.clipboardData.items[i].getAsFile();
+                                if (file) {
+                                    e.preventDefault();
+                                    uploadCustomImageStamp(file);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (stampSettingsSection) {
+                stampSettingsSection.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    stampSettingsSection.style.outline = '2px dashed #007bff';
+                    stampSettingsSection.style.outlineOffset = '8px';
+                    stampSettingsSection.style.borderRadius = '8px';
+                    stampSettingsSection.style.background = 'rgba(0,123,255,0.05)';
+                    stampSettingsSection.style.paddingBottom = '16px';
+                    stampSettingsSection.style.marginBottom = '-16px';
+                });
+                stampSettingsSection.addEventListener('dragleave', e => {
+                    e.preventDefault();
+                    stampSettingsSection.style.outline = '';
+                    stampSettingsSection.style.outlineOffset = '';
+                    stampSettingsSection.style.borderRadius = '';
+                    stampSettingsSection.style.background = '';
+                    stampSettingsSection.style.paddingBottom = '';
+                    stampSettingsSection.style.marginBottom = '';
+                });
+                stampSettingsSection.addEventListener('drop', e => {
+                    e.preventDefault();
+                    stampSettingsSection.style.outline = '';
+                    stampSettingsSection.style.outlineOffset = '';
+                    stampSettingsSection.style.borderRadius = '';
+                    stampSettingsSection.style.background = '';
+                    stampSettingsSection.style.paddingBottom = '';
+                    stampSettingsSection.style.marginBottom = '';
+                    if (e.dataTransfer && e.dataTransfer.files) {
+                        for (let i = 0; i < e.dataTransfer.files.length; i++) {
+                            if (e.dataTransfer.files[i].type.startsWith('image/')) {
+                                uploadCustomImageStamp(e.dataTransfer.files[i]);
+                                break;
+                            }
+                        }
+                    }
                 });
             }
 
@@ -3261,7 +3360,7 @@
                                 const count = msg.reactions[emoji].length;
                                 const reacted = msg.reactions[emoji].includes(myClientId);
                                 if (count === 0) return '';
-                                return `<button class="reaction-btn ${reacted ? 'reacted' : ''}" onclick="App.reactMessage('${emoji}', ${msg.timestamp}, true)">${emoji} <span>${count}</span></button>`;
+                                return `<button class="reaction-btn ${reacted ? 'reacted' : ''}" onclick="App.reactMessage('${emoji}', ${msg.timestamp}, true)">${App.renderStampContent(emoji)} <span>${count}</span></button>`;
                             }).join('')}
                             <button class="add-reaction-btn reaction-btn" style="width: 24px; justify-content: center;" onclick="App.toggleReactionPicker(${msg.timestamp}, true, this, event)">+</button>
                             <button class="reaction-btn" style="width: 24px; justify-content: center;" onclick="App.startReply(true, ${msg.timestamp})" title="返信">↩</button>
@@ -3587,7 +3686,7 @@
             openImageModal, closeImageModal,
             toggleReactionPicker, reactMessage,
             startReply, cancelReply,
-            addCustomStamp, deleteCustomStamp
+            addCustomStamp, deleteCustomStamp, addCustomImageStamp, renderStampContent
         };
     })();
 
@@ -3603,6 +3702,7 @@
     <div id="reaction-picker" style="display: none; position: fixed; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1000; gap: 4px; flex-wrap: wrap; max-width: 200px;"></div>
 </body>
 </html>
+
 
 
 
