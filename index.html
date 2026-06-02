@@ -1307,6 +1307,16 @@
                 </div>
 
                 <div class="sub-section">
+                    <h4>スタンプ（全体共有）</h4>
+                    <p>チャット等で使えるリアクションスタンプを追加・削除します。</p>
+                    <div style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px;">
+                        <input type="text" id="new-stamp-input" placeholder="新しいスタンプ (例: ✨, 乙, 草)" style="flex-grow: 1; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.2); color: var(--text-color); border: 1px solid var(--border-color);">
+                        <button onclick="App.addCustomStamp()" class="btn-outline">追加</button>
+                    </div>
+                    <div id="custom-stamps-list" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
+                </div>
+
+                <div class="sub-section">
                     <h4>データ管理</h4>
                     <p>ゲームデータの書き出し・読み込みを行います。</p>
                     <div class="settings-btn-group">
@@ -1331,16 +1341,6 @@
                         <button class="btn-danger" style="flex:2; padding: 10px;" onclick="App.restoreServerBackup()">選択したバックアップから復元</button>
                         <button class="btn-danger" style="flex:1; padding: 10px;" onclick="App.deleteServerBackup()">削除</button>
                     </div>
-                </div>
-
-                <div class="sub-section">
-                    <h4>スタンプ（全体共有）</h4>
-                    <p>チャット等で使えるリアクションスタンプを追加・削除します。</p>
-                    <div style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px;">
-                        <input type="text" id="new-stamp-input" placeholder="新しいスタンプ (例: ✨, 乙, 草)" style="flex-grow: 1; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.2); color: var(--text-color); border: 1px solid var(--border-color);">
-                        <button onclick="App.addCustomStamp()" class="btn-outline">追加</button>
-                    </div>
-                    <div id="custom-stamps-list" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
                 </div>
             </div>
 
