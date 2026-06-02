@@ -1617,6 +1617,10 @@
             const notif = document.createElement('div');
             notif.className = 'chat-notification';
             
+            // Generate a unique key for caching this active notification
+            const notifId = (isShare ? 'share_' : 'chat_') + msg.id;
+            notif.id = 'notif-' + notifId;
+            
             const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             const name = msg.name || '名無しさん';
             
@@ -1652,12 +1656,19 @@
                 ${imgHtml}
             `;
 
+            const removeFromCache = () => {
+                let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+                delete activeNotifs[notifId];
+                localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs));
+            };
+
             const closeBtn = notif.querySelector('.notif-close-btn');
             if (closeBtn) {
                 closeBtn.onclick = (e) => {
                     e.stopPropagation();
                     notif.classList.add('hiding');
                     setTimeout(() => notif.remove(), 300);
+                    removeFromCache();
                     const storageKey = isShare ? 'dismissedShareNotifs' : 'dismissedChatNotifs';
                     let dismissed = JSON.parse(localStorage.getItem(storageKey) || '[]');
                     if (!dismissed.includes(msg.id)) {
@@ -1672,6 +1683,7 @@
                 e.stopPropagation();
                 notif.classList.add('hiding');
                 setTimeout(() => notif.remove(), 300);
+                removeFromCache();
                 const storageKey = isShare ? 'dismissedShareNotifs' : 'dismissedChatNotifs';
                 let dismissed = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 if (!dismissed.includes(msg.id)) {
@@ -1683,6 +1695,16 @@
                     openChatGame(msg.gameId);
                 }
             };
+
+            // Save to active notifications cache
+            let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+            activeNotifs[notifId] = { msg, isShare, timestamp: Date.now() };
+            // Prune very old active notifications (e.g., older than 3 days)
+            const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+            for (let key in activeNotifs) {
+                if (activeNotifs[key].timestamp < threeDaysAgo) delete activeNotifs[key];
+            }
+            localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs));
 
             container.prepend(notif);
 
@@ -1705,6 +1727,17 @@
 
             // Ensure notification can scroll if it's too large
             setTimeout(() => notif.classList.add('show'), 10);
+        }
+
+        function restoreActiveNotifications() {
+            const activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+            // Sort by timestamp to preserve order
+            const sorted = Object.values(activeNotifs).sort((a, b) => a.msg.timestamp - b.msg.timestamp);
+            sorted.forEach(item => {
+                // If it's already shown (shouldn't happen on init but just in case), skip
+                if (document.getElementById('notif-' + (item.isShare ? 'share_' : 'chat_') + item.msg.id)) return;
+                showChatNotification(item.msg, item.isShare);
+            });
         }
 
         function hexToRgb(hex) {
@@ -3144,6 +3177,7 @@
             }
 
             renderGames();
+            restoreActiveNotifications();
 
             // Auto Recovery Logic
             const localGamesStr = localStorage.getItem('games_backup');
