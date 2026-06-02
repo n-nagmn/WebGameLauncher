@@ -26,23 +26,17 @@ $response = ["status" => "error", "message" => ""];
 $file_path = __DIR__ . '/chat.json';
 $max_messages = 100;
 
-$is_multipart = isset($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'multipart/form-data') !== false;
+$json_data = file_get_contents('php://input');
 
-if ($is_multipart) {
-    $decoded = $_POST;
-} else {
-    $json_data = file_get_contents('php://input');
+if (empty($json_data)) {
+    $response["message"] = "データが空です";
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
-    if (empty($json_data)) {
-        $response["message"] = "データが空です";
-        echo json_encode($response, JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    $decoded = json_decode($json_data, true);
-    if (!is_array($decoded)) {
-        $decoded = [];
-    }
+$decoded = json_decode($json_data, true);
+if (!is_array($decoded)) {
+    $decoded = [];
 }
 
 $action = $decoded['action'] ?? 'post';
@@ -127,13 +121,9 @@ $gameId = !empty($decoded['gameId']) ? trim($decoded['gameId']) : null;
 $timestamp = time() * 1000;
 
 if ($name === '' || $message === '') {
-    if (!($is_multipart && isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK)) {
-        if ($message === '') {
-            $response["message"] = "名前とメッセージを入力してください";
-            echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-    }
+    $response["message"] = "名前とメッセージを入力してください";
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 $line_count = substr_count($message, "\n") + 1;
@@ -163,34 +153,6 @@ if ($line_count >= 5 && !$is_aa) {
 $clientId = isset($decoded['clientId']) ? trim($decoded['clientId']) : null;
 $replyTo = isset($decoded['replyTo']) ? $decoded['replyTo'] : null;
 
-$imageUrl = null;
-if ($is_multipart && isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-    $uploadDir = __DIR__ . "/uploads/";
-    if (!is_dir($uploadDir)) {
-        @mkdir($uploadDir, 0777, true);
-        @chmod($uploadDir, 0777);
-    }
-    
-    $check = getimagesize($_FILES['image']['tmp_name']);
-    if($check !== false) {
-        $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-        $filename = uniqid('img_') . '.' . $ext;
-        $targetPath = $uploadDir . $filename;
-        if (@move_uploaded_file($_FILES['image']['tmp_name'], $targetPath)) {
-            @chmod($targetPath, 0666);
-            $imageUrl = "uploads/" . rawurlencode($filename);
-        } else {
-            $response["message"] = "画像の保存に失敗しました。";
-            echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-    } else {
-        $response["message"] = "画像ファイルではありません。";
-        echo json_encode($response, JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-}
-
 $new_message = [
     'id' => uniqid('msg_'),
     'name' => $name,
@@ -198,7 +160,6 @@ $new_message = [
     'gameId' => $gameId,
     'timestamp' => $timestamp,
     'clientId' => $clientId,
-    'imageUrl' => $imageUrl,
     'replyTo' => $replyTo
 ];
 
