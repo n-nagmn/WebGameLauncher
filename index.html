@@ -1309,9 +1309,9 @@
                 <div class="sub-section">
                     <h4>スタンプ（全体共有）</h4>
                     <p>チャット等で使えるリアクションスタンプを追加・削除します。</p>
-                    <div style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px;">
-                        <input type="text" id="new-stamp-input" placeholder="新しいスタンプ (例: ✨, 乙, 草)" style="flex-grow: 1; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.2); color: var(--text-color); border: 1px solid var(--border-color);">
-                        <button onclick="App.addCustomStamp()" class="btn-outline">追加</button>
+                    <div class="form-group" style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px; flex-direction: row; align-items: center;">
+                        <input type="text" id="new-stamp-input" placeholder="新しいスタンプ (例: ✨, 乙, 草)" style="flex-grow: 1; padding: 10px 14px; margin: 0;">
+                        <button onclick="App.addCustomStamp()" class="btn-outline" style="white-space: nowrap; padding: 10px 14px; margin: 0;">追加</button>
                     </div>
                     <div id="custom-stamps-list" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
                 </div>
@@ -1467,7 +1467,7 @@
             const list = document.getElementById('custom-stamps-list');
             if(!list) return;
             list.innerHTML = customStamps.map((s, index) => `
-                <div style="display: flex; align-items: center; background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; gap: 4px;">
+                <div class="stamp-chip">
                     <span>${escapeHtml(s)}</span>
                     <button onclick="App.deleteCustomStamp(${index})" style="background: none; border: none; color: #ff5252; cursor: pointer; padding: 0 4px;">&times;</button>
                 </div>
