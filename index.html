@@ -473,8 +473,7 @@
             border: 2px solid transparent;
             transition: all var(--transition-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            display: flex;
-            flex-direction: column;
+            display: block;
             height: 100%;
             backdrop-filter: blur(8px);
             outline: none;
@@ -498,9 +497,12 @@
             aspect-ratio: 16 / 9;
             object-fit: cover;
             pointer-events: none;
-            flex-grow: 1;
+            display: block;
             background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-            transition: opacity 0.3s;
+            transition: transform 0.4s ease, opacity 0.3s;
+        }
+        .game-card:hover img, .game-card.focused img {
+            transform: scale(1.05);
         }
 
         .game-card img.loading { opacity: 0.3; }
@@ -574,26 +576,36 @@
             opacity: 0;
         }
 
+        .card-info-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 100%);
+            padding: 30px 60px 10px 12px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            pointer-events: none;
+        }
         .title-bar {
-            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.6));
-            padding: 7px 12px;
-            font-size: 13px;
-            font-weight: 600;
-            text-align: center;
+            font-size: 15px;
+            font-weight: 700;
+            text-align: left;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             color: white;
-            border-top: 1px solid rgba(255,255,255,0.05);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9);
         }
 
         .card-category {
-            font-size: 10px;
-            color: #aaa;
-            text-align: center;
-            padding: 4px 12px;
-            background: rgba(0,0,0,0.3);
-            border-top: 1px solid rgba(255,255,255,0.03);
+            font-size: 11px;
+            color: #ddd;
+            text-align: left;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+            font-weight: 500;
         }
 
         body.hide-titles .title-bar,
@@ -2155,8 +2167,10 @@
                     <button class="pin-btn" title="${game.isPinned ? '固定を解除' : '位置を固定'}" onclick="App.togglePin(${game.id}, event)">${game.isPinned ? '✖️' : '📌'}</button>
                     <button class="edit-btn" title="編集" onclick="App.openGameModal(${game.id}, event)" aria-label="${escapeHtml(game.name)}を編集">✎</button>
                     <img src="${escapeHtml(imgUrl)}" alt="" loading="lazy" onerror="this.src='${generatePlaceholderImage(game.name)}'" onload="this.classList.add('loaded')">
-                    <div class="title-bar" title="${escapeHtml(game.name)}">${escapeHtml(game.name)}</div>
-                    ${catHtml}
+                    <div class="card-info-overlay">
+                        <div class="title-bar" title="${escapeHtml(game.name)}">${escapeHtml(game.name)}</div>
+                        ${catHtml}
+                    </div>
                 `;
                 fragment.appendChild(card);
             });
