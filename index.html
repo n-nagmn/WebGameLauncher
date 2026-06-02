@@ -3208,6 +3208,27 @@
                     }
                 }
             });
+            
+            // Clipboard Paste Support
+            window.addEventListener('paste', e => {
+                if (!dropZone.classList.contains('active')) return;
+                
+                if (e.clipboardData && e.clipboardData.items) {
+                    for (let i = 0; i < e.clipboardData.items.length; i++) {
+                        if (e.clipboardData.items[i].type.startsWith('image/')) {
+                            const file = e.clipboardData.items[i].getAsFile();
+                            if (file) {
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(file);
+                                fileInput.files = dataTransfer.files;
+                                handleShareImageSelect();
+                                e.preventDefault();
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         async function submitShare() {
