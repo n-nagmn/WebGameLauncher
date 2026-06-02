@@ -41,6 +41,57 @@ if (!is_array($decoded)) {
 
 $action = $decoded['action'] ?? 'post';
 
+if ($action === 'react') {
+    $timestamp = $decoded['timestamp'] ?? 0;
+    $emoji = $decoded['emoji'] ?? '';
+    $clientId = $decoded['clientId'] ?? '';
+    if (!$timestamp || !$emoji || !$clientId) {
+        http_response_code(400);
+        echo json_encode(["status" => "error", "message" => "Missing react data"]);
+        exit;
+    }
+
+    $chat = [];
+    if (file_exists($file_path)) {
+        $chat = json_decode(file_get_contents($file_path), true) ?: [];
+    }
+
+    $updated = false;
+    foreach ($chat as &$msg) {
+        if (isset($msg['timestamp']) && $msg['timestamp'] === $timestamp) {
+            if (!isset($msg['reactions'])) {
+                $msg['reactions'] = [];
+            }
+            if (!isset($msg['reactions'][$emoji])) {
+                $msg['reactions'][$emoji] = [];
+            }
+            
+            $idx = array_search($clientId, $msg['reactions'][$emoji]);
+            if ($idx !== false) {
+                // Remove reaction
+                array_splice($msg['reactions'][$emoji], $idx, 1);
+                if (empty($msg['reactions'][$emoji])) {
+                    unset($msg['reactions'][$emoji]);
+                }
+            } else {
+                // Add reaction
+                $msg['reactions'][$emoji][] = $clientId;
+            }
+            $updated = true;
+            break;
+        }
+    }
+    
+    if ($updated) {
+        @file_put_contents($file_path, json_encode($chat, JSON_UNESCAPED_UNICODE));
+        echo json_encode(["status" => "success"]);
+    } else {
+        http_response_code(404);
+        echo json_encode(["status" => "error", "message" => "Message not found"]);
+    }
+    exit;
+}
+
 if ($action === 'delete') {
     $timestamp_to_delete = isset($decoded['timestamp']) ? intval($decoded['timestamp']) : 0;
     if ($timestamp_to_delete > 0) {
