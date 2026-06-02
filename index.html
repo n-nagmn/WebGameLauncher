@@ -3459,10 +3459,12 @@
             formData.append('message', message);
             formData.append('clientId', myClientId);
             formData.append('isShare', 'true');
+            if (currentReplyToShare) formData.append('replyTo', JSON.stringify(currentReplyToShare));
             if (gameId) formData.append('gameId', gameId);
             if (file) {
                 formData.append('image', file);
             }
+            cancelReply(true);
             
             try {
                 const response = await fetch('post_share.php', {
