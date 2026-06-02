@@ -1409,7 +1409,11 @@
         let initialShareLoaded = false;
         let chatSidebarOpen = false;
         let initialChatLoaded = false;
-        const myClientId = 'client_' + Math.random().toString(36).substr(2, 9);
+        let myClientId = localStorage.getItem('launcher_client_id');
+        if (!myClientId) {
+            myClientId = 'client_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('launcher_client_id', myClientId);
+        }
 
         // --- DOM Elements ---
         const els = {};
