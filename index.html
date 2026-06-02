@@ -1732,6 +1732,10 @@
                 
                 html += `
                     <div class="chat-message-item" id="msg-${msg.id}">
+                        ${msg.replyTo ? `<div style="font-size: 11px; color: gray; margin-bottom: 2px; padding-left: 12px; border-left: 2px solid gray; display: flex; align-items: center; gap: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border-radius: 2px; background: rgba(128,128,128,0.05); padding: 2px 4px 2px 8px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>
+                            <strong>${escapeHtml(msg.replyTo.name)}</strong>: ${escapeHtml(msg.replyTo.message)}
+                        </div>` : ''}
                         <div class="chat-message-header" style="display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 3px; align-items: center;">
                             <div>
                                 <span class="chat-message-name">${escapeHtml(name)}</span>
@@ -3131,6 +3135,10 @@
                 
                 html += `
                     <div class="chat-message-item" id="share-msg-${msg.id}">
+                        ${msg.replyTo ? `<div style="font-size: 11px; color: gray; margin-bottom: 2px; padding-left: 12px; border-left: 2px solid gray; display: flex; align-items: center; gap: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border-radius: 2px; background: rgba(128,128,128,0.05); padding: 2px 4px 2px 8px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>
+                            <strong>${escapeHtml(msg.replyTo.name)}</strong>: ${escapeHtml(msg.replyTo.message)}
+                        </div>` : ''}
                         <div class="chat-message-header" style="display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 3px; align-items: center;">
                             <div>
                                 <span class="chat-message-name">${escapeHtml(name)}</span>
