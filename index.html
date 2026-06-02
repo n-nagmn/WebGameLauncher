@@ -1756,7 +1756,7 @@
                                 return `<button class="reaction-btn ${reacted ? 'reacted' : ''}" onclick="App.reactMessage('${emoji}', ${msg.timestamp}, false)">${emoji} <span>${count}</span></button>`;
                             }).join('')}
                             <button class="add-reaction-btn reaction-btn" style="width: 24px; justify-content: center;" onclick="App.toggleReactionPicker(${msg.timestamp}, false, this, event)">+</button>
-                            <button class="reaction-btn" style="width: 24px; justify-content: center;" onclick="App.startReply(false, ${msg.timestamp}, '${escapeHtml(msg.name).replace(/'/g, "\'")}', '${escapeHtml(msg.message || '').replace(/'/g, "\'").replace(/\n/g, " ")}')" title="返信">↩</button>
+                            <button class="reaction-btn" style="width: 24px; justify-content: center;" onclick="App.startReply(false, ${msg.timestamp})" title="返信">↩</button>
                         </div>
                     </div>
                 `;
@@ -3159,7 +3159,7 @@
                                 return `<button class="reaction-btn ${reacted ? 'reacted' : ''}" onclick="App.reactMessage('${emoji}', ${msg.timestamp}, true)">${emoji} <span>${count}</span></button>`;
                             }).join('')}
                             <button class="add-reaction-btn reaction-btn" style="width: 24px; justify-content: center;" onclick="App.toggleReactionPicker(${msg.timestamp}, true, this, event)">+</button>
-                            <button class="reaction-btn" style="width: 24px; justify-content: center;" onclick="App.startReply(true, ${msg.timestamp}, '${escapeHtml(msg.name).replace(/'/g, "\'")}', '${escapeHtml(msg.message || '').replace(/'/g, "\'").replace(/\n/g, " ")}')" title="返信">↩</button>
+                            <button class="reaction-btn" style="width: 24px; justify-content: center;" onclick="App.startReply(true, ${msg.timestamp})" title="返信">↩</button>
                         </div>
                     </div>
                 `;
@@ -3191,8 +3191,15 @@
         let currentReplyToChat = null;
         let currentReplyToShare = null;
 
-        function startReply(isShare, timestamp, name, messageSnippet) {
-            const replyObj = { timestamp, name, message: messageSnippet.length > 30 ? messageSnippet.substring(0, 30) + '...' : messageSnippet };
+        function startReply(isShare, timestamp) {
+            const msgs = isShare ? shareMessages : chatMessages;
+            const msg = msgs.find(m => m.timestamp === timestamp);
+            if (!msg) return;
+            const name = msg.name;
+            const messageText = msg.message || '';
+            const messageSnippet = messageText.length > 30 ? messageText.substring(0, 30) + '...' : messageText;
+            
+            const replyObj = { timestamp, name, message: messageSnippet.replace(/\n/g, " ") };
             if (isShare) {
                 currentReplyToShare = replyObj;
                 document.getElementById('share-reply-preview').style.display = 'flex';
