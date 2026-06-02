@@ -202,6 +202,7 @@ if ($is_multipart && isset($_FILES['image']) && $_FILES['image']['error'] === UP
 }
 
 $clientId = isset($decoded['clientId']) ? trim($decoded['clientId']) : null;
+$replyTo = isset($decoded['replyTo']) ? (is_string($decoded['replyTo']) ? json_decode($decoded['replyTo'], true) : $decoded['replyTo']) : null;
 
 $new_message = [
     'id' => uniqid('msg_'),
@@ -210,7 +211,8 @@ $new_message = [
     'gameId' => $gameId,
     'timestamp' => $timestamp,
     'clientId' => $clientId,
-    'imageUrl' => $imageUrl
+    'imageUrl' => $imageUrl,
+    'replyTo' => $replyTo
 ];
 
 $existing_messages = [];

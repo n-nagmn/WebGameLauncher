@@ -151,6 +151,7 @@ if ($line_count >= 5 && !$is_aa) {
 }
 
 $clientId = isset($decoded['clientId']) ? trim($decoded['clientId']) : null;
+$replyTo = isset($decoded['replyTo']) ? $decoded['replyTo'] : null;
 
 $new_message = [
     'id' => uniqid('msg_'),
@@ -158,7 +159,8 @@ $new_message = [
     'message' => $message,
     'gameId' => $gameId,
     'timestamp' => $timestamp,
-    'clientId' => $clientId
+    'clientId' => $clientId,
+    'replyTo' => $replyTo
 ];
 
 $existing_messages = [];
