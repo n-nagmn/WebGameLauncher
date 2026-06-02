@@ -3416,6 +3416,27 @@
         }
 
         async function deleteShareMessage(timestamp) {
+            // Remove notification immediately
+            const msg = shareMessages.find(m => m.timestamp === timestamp);
+            if (msg) {
+                document.querySelectorAll('.chat-notification').forEach(notif => {
+                    if (notif.dataset.isShare !== 'true') return;
+                    const ts = parseInt(notif.dataset.timestamp);
+                    const nName = notif.dataset.name;
+                    const nMsg = notif.dataset.messageText;
+                    if (ts === timestamp || (msg.name === nName && msg.message === nMsg && Math.abs(ts - timestamp) < 60000)) {
+                        notif.classList.add('hiding');
+                        setTimeout(() => notif.remove(), 300);
+                        let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+                        const notifId = notif.id ? notif.id.replace('notif-', '') : '';
+                        if (notifId) {
+                            delete activeNotifs[notifId];
+                            localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs));
+                        }
+                    }
+                });
+            }
+
             try {
                 const res = await fetch('./post_share.php', {
                     method: 'POST',
@@ -3521,18 +3542,25 @@
 
         async function deleteChatMessage(timestamp) {
             // Remove notification immediately
-            document.querySelectorAll('.chat-notification').forEach(notif => {
-                if (notif.id.startsWith('notif-chat_') && parseInt(notif.dataset.timestamp) === timestamp) {
-                    notif.classList.add('hiding');
-                    setTimeout(() => notif.remove(), 300);
-                    let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
-                    const notifId = notif.id.replace('notif-', '');
-                    if (notifId) {
-                        delete activeNotifs[notifId];
-                        localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs));
+            const msg = chatMessages.find(m => m.timestamp === timestamp);
+            if (msg) {
+                document.querySelectorAll('.chat-notification').forEach(notif => {
+                    if (notif.dataset.isShare === 'true') return;
+                    const ts = parseInt(notif.dataset.timestamp);
+                    const nName = notif.dataset.name;
+                    const nMsg = notif.dataset.messageText;
+                    if (ts === timestamp || (msg.name === nName && msg.message === nMsg && Math.abs(ts - timestamp) < 60000)) {
+                        notif.classList.add('hiding');
+                        setTimeout(() => notif.remove(), 300);
+                        let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+                        const notifId = notif.id ? notif.id.replace('notif-', '') : '';
+                        if (notifId) {
+                            delete activeNotifs[notifId];
+                            localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs));
+                        }
                     }
-                }
-            });
+                });
+            }
 
             try {
                 const res = await fetch('./post_chat.php', {
