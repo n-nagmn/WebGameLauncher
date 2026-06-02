@@ -1,4 +1,4 @@
-<?php
+﻿with open('manage_backups.php', 'w', encoding='utf-8', newline='\n') as f: f.write('''<?php
 /**
  * Web Game Launcher Pro - Backup Management Endpoint
  */
@@ -9,6 +9,7 @@ error_reporting(E_ALL);
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
+header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -19,7 +20,6 @@ $response = ["status" => "error", "message" => ""];
 $backup_dir = __DIR__ . '/backups';
 $games_file = __DIR__ . '/games.json';
 $share_file = __DIR__ . '/share.json';
-$stamps_file = __DIR__ . '/stamps.json';
 $uploads_dir = __DIR__ . '/uploads';
 
 // Ensure backup directory exists
@@ -30,38 +30,7 @@ if (!is_dir($backup_dir)) {
 
 $action = $_GET['action'] ?? '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'download') {
-    $temp_zip = sys_get_temp_dir() . '/export_' . uniqid() . '.zip';
-    $py_cmd = "python3 -c \"
-import zipfile, os
-with zipfile.ZipFile('" . $temp_zip . "', 'w', zipfile.ZIP_DEFLATED) as zf:
-    if os.path.exists('" . $games_file . "'): zf.write('" . $games_file . "', 'games.json')
-    if os.path.exists('" . $share_file . "'): zf.write('" . $share_file . "', 'share.json')
-    if os.path.exists('" . $stamps_file . "'): zf.write('" . $stamps_file . "', 'stamps.json')
-    if os.path.exists('" . $uploads_dir . "'):
-        for root, dirs, files in os.walk('" . $uploads_dir . "'):
-            for file in files:
-                filepath = os.path.join(root, file)
-                arcname = os.path.relpath(filepath, '" . __DIR__ . "')
-                zf.write(filepath, arcname)
-\"";
-    exec($py_cmd, $out, $ret);
-    if ($ret === 0 && file_exists($temp_zip)) {
-        header('Content-Type: application/zip');
-        header('Content-Disposition: attachment; filename="launcher_backup_' . date('Ymd_His') . '.zip"');
-        header('Content-Length: ' . filesize($temp_zip));
-        readfile($temp_zip);
-        unlink($temp_zip);
-        exit;
-    } else {
-        http_response_code(500);
-        echo "Failed to create zip";
-        exit;
-    }
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
-    header('Content-Type: application/json; charset=utf-8');
     $files = array_merge(glob($backup_dir . '/games_*.json') ?: [], glob($backup_dir . '/backup_*.zip') ?: []);
     $backups = [];
     if ($files) {
@@ -72,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
                 'time' => filemtime($file)
             ];
         }
+        // Sort by time descending
         usort($backups, function($a, $b) {
             return $b['time'] - $a['time'];
         });
@@ -81,84 +51,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json; charset=utf-8');
     $json_data = file_get_contents('php://input');
     $decoded = json_decode($json_data, true) ?: [];
-    $post_action = $decoded['action'] ?? $_POST['action'] ?? '';
+    $post_action = $decoded['action'] ?? '';
 
     if ($post_action === 'create') {
         $backup_name = $backup_dir . '/backup_' . date('Ymd_His') . '_' . uniqid() . '.zip';
-        $py_cmd = "python3 -c \"
-import zipfile, os
-with zipfile.ZipFile('" . $backup_name . "', 'w', zipfile.ZIP_DEFLATED) as zf:
-    if os.path.exists('" . $games_file . "'): zf.write('" . $games_file . "', 'games.json')
-    if os.path.exists('" . $share_file . "'): zf.write('" . $share_file . "', 'share.json')
-    if os.path.exists('" . $stamps_file . "'): zf.write('" . $stamps_file . "', 'stamps.json')
-    if os.path.exists('" . $uploads_dir . "'):
-        for root, dirs, files in os.walk('" . $uploads_dir . "'):
-            for file in files:
-                filepath = os.path.join(root, file)
-                arcname = os.path.relpath(filepath, '" . __DIR__ . "')
-                zf.write(filepath, arcname)
-\"";
-        exec($py_cmd, $out, $ret);
         
-        if ($ret === 0 && file_exists($backup_name)) {
-            @chmod($backup_name, 0666);
-            $response["status"] = "success";
-            $response["message"] = "バックアップを作成しました";
-            echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            exit;
+        $paths = [];
+        if (file_exists($games_file)) $paths[] = 'games.json';
+        if (file_exists($share_file)) $paths[] = 'share.json';
+        if (is_dir($uploads_dir)) $paths[] = 'uploads';
+        
+        if (count($paths) > 0) {
+            $paths_str = implode(' ', array_map(function($p) { return escapeshellarg($p); }, $paths));
+            $zip_cmd = "cd " . escapeshellarg(__DIR__) . " && zip -r " . escapeshellarg($backup_name) . " " . $paths_str;
+            exec($zip_cmd, $output, $ret);
+            
+            if ($ret === 0 && file_exists($backup_name)) {
+                @chmod($backup_name, 0666);
+                $response["status"] = "success";
+                $response["message"] = "バックアップを作成しました";
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                exit;
+            }
         }
         
         $response["message"] = "バックアップの作成に失敗しました";
         echo json_encode($response, JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    if ($post_action === 'upload_restore') {
-        if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-            $response["message"] = "アップロードに失敗しました";
-            echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-        
-        $tmp_name = $_FILES['file']['tmp_name'];
-        $ext = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-        
-        if ($ext === 'zip') {
-            $dest = __DIR__;
-            $py_cmd = "python3 -c \"
-import zipfile
-with zipfile.ZipFile('". $tmp_name ."', 'r') as zf:
-    zf.extractall('". $dest ."')
-\"";
-            exec($py_cmd, $out, $ret);
-            
-            if ($ret === 0) {
-                @chmod($games_file, 0777);
-                @chmod($share_file, 0777);
-                @chmod($stamps_file, 0777);
-                $response["status"] = "success";
-                $response["message"] = "アップロードされたZIPから復元しました";
-                echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            } else {
-                $response["message"] = "ZIPファイルの展開に失敗しました";
-                echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            }
-        } else {
-            // Assume json
-            $backup_content = @file_get_contents($tmp_name);
-            if ($backup_content !== false && @file_put_contents($games_file, $backup_content) !== false) {
-                @chmod($games_file, 0777);
-                $response["status"] = "success";
-                $response["message"] = "アップロードされたJSONから復元しました";
-                echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            } else {
-                $response["message"] = "復元に失敗しました";
-                echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            }
-        }
         exit;
     }
 
@@ -176,21 +96,19 @@ with zipfile.ZipFile('". $tmp_name ."', 'r') as zf:
             exit;
         }
         
-
+        // Before restoring, create an auto-backup of the current state just in case
+        if (file_exists($games_file)) {
+            @copy($games_file, $backup_dir . '/games_pre_restore_' . date('Ymd_His') . '.json');
+        }
 
         if (pathinfo($target_backup, PATHINFO_EXTENSION) === 'zip') {
             $dest = __DIR__;
-            $py_cmd = "python3 -c \"
-import zipfile
-with zipfile.ZipFile('" . $target_backup . "', 'r') as zf:
-    zf.extractall('" . $dest . "')
-\"";
-            exec($py_cmd, $out, $ret);
+            $unzip_cmd = "unzip -o " . escapeshellarg($target_backup) . " -d " . escapeshellarg($dest);
+            exec($unzip_cmd, $output, $ret);
             
             if ($ret === 0) {
                 @chmod($games_file, 0777);
                 @chmod($share_file, 0777);
-                @chmod($stamps_file, 0777);
                 $response["status"] = "success";
                 $response["message"] = "ZIPバックアップから復元しました";
                 echo json_encode($response, JSON_UNESCAPED_UNICODE);
@@ -245,4 +163,4 @@ with zipfile.ZipFile('" . $target_backup . "', 'r') as zf:
 
 http_response_code(400);
 echo json_encode(["status" => "error", "message" => "Bad Request"], JSON_UNESCAPED_UNICODE);
-?>
+?>''')

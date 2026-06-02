@@ -1332,6 +1332,16 @@
                         <button class="btn-danger" style="flex:1; padding: 10px;" onclick="App.deleteServerBackup()">削除</button>
                     </div>
                 </div>
+
+                <div class="sub-section">
+                    <h4>スタンプ（全体共有）</h4>
+                    <p>チャット等で使えるリアクションスタンプを追加・削除します。</p>
+                    <div style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px;">
+                        <input type="text" id="new-stamp-input" placeholder="新しいスタンプ (例: ✨, 乙, 草)" style="flex-grow: 1; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.2); color: var(--text-color); border: 1px solid var(--border-color);">
+                        <button onclick="App.addCustomStamp()" class="btn-outline">追加</button>
+                    </div>
+                    <div id="custom-stamps-list" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
+                </div>
             </div>
 
             <div class="modal-actions">
@@ -1431,6 +1441,70 @@
         let localConfig = JSON.parse(localStorage.getItem('launcher_local_config')) || { ...DEFAULT_LOCAL_CONFIG };
         
         let games = [];
+        let customStamps = [];
+        const defaultStamps = ['👍', '❤️', '😂', '🎉', '草'];
+
+        async function fetchStamps() {
+            try {
+                const res = await fetch('post_stamps.php');
+                if (res.ok) {
+                    customStamps = await res.json();
+                    renderReactionPicker();
+                    renderSettingsStamps();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function renderReactionPicker() {
+            const picker = document.getElementById('reaction-picker');
+            const allStamps = [...defaultStamps, ...customStamps];
+            picker.innerHTML = allStamps.map(s => `
+                <button class="picker-emoji" onclick="App.reactMessage('${escapeHtml(s)}')" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${escapeHtml(s)}</button>
+            `).join('');
+        }
+
+        function renderSettingsStamps() {
+            const list = document.getElementById('custom-stamps-list');
+            if(!list) return;
+            list.innerHTML = customStamps.map((s, index) => `
+                <div style="display: flex; align-items: center; background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; gap: 4px;">
+                    <span>${escapeHtml(s)}</span>
+                    <button onclick="App.deleteCustomStamp(${index})" style="background: none; border: none; color: #ff5252; cursor: pointer; padding: 0 4px;">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        async function addCustomStamp() {
+            const input = document.getElementById('new-stamp-input');
+            const val = input.value.trim();
+            if(!val) return;
+            if(defaultStamps.includes(val) || customStamps.includes(val)) {
+                showToast('既に存在するスタンプです', 'error');
+                return;
+            }
+            customStamps.push(val);
+            input.value = '';
+            await saveCustomStamps();
+        }
+
+        async function deleteCustomStamp(index) {
+            customStamps.splice(index, 1);
+            await saveCustomStamps();
+        }
+
+        async function saveCustomStamps() {
+            try {
+                const res = await fetch('post_stamps.php', {
+                    method: 'POST',
+                    body: JSON.stringify(customStamps)
+                });
+                if(res.ok) {
+                    renderReactionPicker();
+                    renderSettingsStamps();
+                    showToast('スタンプを保存しました');
+                }
+            } catch(e) { console.error(e); }
+        }
         let filteredGames = [];
         let dragStartIndex = null;
         let categoryDragStartIndex = null;
@@ -2960,6 +3034,7 @@
                 if (res.ok) {
                     games = await res.json();
                 }
+                await fetchStamps();
             } catch (e) {
                 console.warn('Games load failed');
                 const localGames = localStorage.getItem('games_backup');
@@ -3511,7 +3586,8 @@
             openShare, closeShare, submitShare, handleShareImageSelect, clearShareImage, deleteShareMessage,
             openImageModal, closeImageModal,
             toggleReactionPicker, reactMessage,
-            startReply, cancelReply
+            startReply, cancelReply,
+            addCustomStamp, deleteCustomStamp
         };
     })();
 
@@ -3524,13 +3600,7 @@
     </div>
 
     <!-- Reaction Picker -->
-    <div id="reaction-picker" style="display: none; position: fixed; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1000; display: none; /* flex when active */ gap: 4px;">
-        <button class="picker-emoji" onclick="App.reactMessage('👍')" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">👍</button>
-        <button class="picker-emoji" onclick="App.reactMessage('❤️')" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">❤️</button>
-        <button class="picker-emoji" onclick="App.reactMessage('😂')" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">😂</button>
-        <button class="picker-emoji" onclick="App.reactMessage('😢')" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">😢</button>
-        <button class="picker-emoji" onclick="App.reactMessage('🎉')" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🎉</button>
-    </div>
+    <div id="reaction-picker" style="display: none; position: fixed; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1000; gap: 4px; flex-wrap: wrap; max-width: 200px;"></div>
 </body>
 </html>
 
