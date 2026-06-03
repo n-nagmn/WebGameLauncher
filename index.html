@@ -1618,7 +1618,11 @@
             notif.className = 'chat-notification';
             
             // Generate a unique key for caching this active notification
-            const notifId = (isShare ? 'share_' : 'chat_') + msg.id;
+            const notifId = (isShare ? 'share_' : 'chat_') + (msg.id || ('temp_' + msg.timestamp));
+
+            // Check if already exists in DOM
+            if (document.getElementById('notif-' + notifId)) return;
+
             notif.id = 'notif-' + notifId;
             
             const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -1852,12 +1856,13 @@
                     if (JSON.stringify(newMessages) !== JSON.stringify(chatMessages)) {
                         // Remove notifications for deleted messages
                         document.querySelectorAll('.chat-notification').forEach(notif => {
+                            if (notif.dataset.isShare === 'true') return;
                             const ts = parseInt(notif.dataset.timestamp);
                             const nName = notif.dataset.name;
                             const nMsg = notif.dataset.messageText;
                             if (ts && !newMessages.some(m => 
                                 (m.timestamp === ts) || 
-                                (m.name === nName && m.message === nMsg && Math.abs(m.timestamp - ts) < 60000)
+                                (m.name === nName && m.message === nMsg)
                             )) {
                                 notif.classList.add('hiding');
                                 setTimeout(() => notif.remove(), 300);
@@ -3319,7 +3324,7 @@
                             const nMsg = notif.dataset.messageText;
                             if (ts && !newMessages.some(m =>
                                 (m.timestamp === ts) ||
-                                (m.name === nName && m.message === nMsg && Math.abs(m.timestamp - ts) < 60000)
+                                (m.name === nName && m.message === nMsg)
                             )) {
                                 notif.classList.add('hiding');
                                 setTimeout(() => notif.remove(), 300);
@@ -3424,7 +3429,7 @@
                     const ts = parseInt(notif.dataset.timestamp);
                     const nName = notif.dataset.name;
                     const nMsg = notif.dataset.messageText;
-                    if (ts === timestamp || (msg.name === nName && msg.message === nMsg && Math.abs(ts - timestamp) < 60000)) {
+                    if (ts === timestamp || (msg.name === nName && msg.message === nMsg)) {
                         notif.classList.add('hiding');
                         setTimeout(() => notif.remove(), 300);
                         let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
@@ -3549,7 +3554,7 @@
                     const ts = parseInt(notif.dataset.timestamp);
                     const nName = notif.dataset.name;
                     const nMsg = notif.dataset.messageText;
-                    if (ts === timestamp || (msg.name === nName && msg.message === nMsg && Math.abs(ts - timestamp) < 60000)) {
+                    if (ts === timestamp || (msg.name === nName && msg.message === nMsg)) {
                         notif.classList.add('hiding');
                         setTimeout(() => notif.remove(), 300);
                         let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
