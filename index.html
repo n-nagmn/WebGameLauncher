@@ -1583,11 +1583,10 @@
             return userId;
         }
 
+        const htmlEscapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
         function escapeHtml(str) {
             if (typeof str !== 'string') return '';
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
+            return str.replace(/[&<>"']/g, match => htmlEscapes[match]);
         }
 
         function showToast(message, type = 'info', duration = 3000) {
@@ -2207,6 +2206,7 @@
             }
 
             const fragment = document.createDocumentFragment();
+            const readHistory = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
 
             filteredGames.forEach((game, index) => {
                 const card = document.createElement('div');
@@ -2236,7 +2236,6 @@
                 });
 
                 // --- UPDATE / NEW / PINNED Badge Logic ---
-                const readHistory = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
                 const lastReadTime = readHistory[game.id] || 0;
 
                 const createdAtMs = game.createdAt ? (game.createdAt > 9999999999 ? game.createdAt : game.createdAt * 1000) : 0;
@@ -3208,7 +3207,11 @@
                 } catch(e) {}
             }
 
-            els.searchInput.addEventListener('input', renderGames);
+            let searchTimeout;
+            els.searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(renderGames, 150);
+            });
 
             let mousedownTarget = null;
             window.addEventListener('mousedown', e => {
