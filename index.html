@@ -1762,7 +1762,9 @@
             return hash;
         }
 
+        const _placeholderCache = {};
         function generatePlaceholderImage(title) {
+            if (_placeholderCache[title]) return _placeholderCache[title];
             const canvas = document.createElement('canvas');
             canvas.width = 400; 
             canvas.height = 225;
@@ -1789,7 +1791,9 @@
 
             const initials = title.substring(0, Math.min(title.length, 2)).toUpperCase();
             ctx.fillText(initials, canvas.width / 2, canvas.height / 2);
-            return canvas.toDataURL('image/png');
+            const dataUrl = canvas.toDataURL('image/png');
+            _placeholderCache[title] = dataUrl;
+            return dataUrl;
         }
 
         // --- Server Communication ---
