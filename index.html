@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -97,7 +97,8 @@
             background: linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, transparent 100%);
         }
 
-        body.light-mode .player-badge {
+        body.light-mode .player-badge,
+        body.light-mode .creator-badge {
             background: rgba(255, 255, 255, 0.9);
             color: #333;
             border-color: rgba(0,0,0,0.1);
@@ -506,6 +507,19 @@
 
         .game-card img.loading { opacity: 0.3; }
         .game-card img.loaded { opacity: 1; }
+
+        .creator-badge {
+            position: absolute;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #ddd;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            z-index: 15;
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
 
         .player-badge {
             position: absolute;
@@ -1203,6 +1217,10 @@
                         <span style="color: #888; font-size: 13px;">人</span>
                     </div>
                 </div>
+            </div>
+            <div class="form-group">
+                <label for="game-creator">制作者 (オプション)</label>
+                <input type="text" id="game-creator" placeholder="制作者名...">
             </div>
             <div class="form-group">
                 <label for="game-url">ゲームURL *</label>
@@ -2306,10 +2324,16 @@
                     playerBadge = `<span class="player-badge ${isMulti ? 'multi' : ''}">${label}</span>`;
                 }
 
+                let creatorBadge = '';
+                if (game.creator) {
+                    creatorBadge = `<span class="creator-badge" style="bottom: 8px;">制作者: ${escapeHtml(game.creator)}</span>`;
+                }
+
                 card.innerHTML = `
                     ${badge}
                     ${activeBadge}
                     ${playerBadge}
+                    ${creatorBadge}
                     <button class="pin-btn" title="${game.isPinned ? '固定を解除' : '位置を固定'}" onclick="App.togglePin(${game.id}, event)">${game.isPinned ? '✖️' : '📌'}</button>
                     <button class="edit-btn" title="編集" onclick="App.openGameModal(${game.id}, event)" aria-label="${escapeHtml(game.name)}を編集">✎</button>
                     <img alt="" loading="lazy">
@@ -2636,6 +2660,7 @@
                 }
                 document.getElementById('game-players-min').value = game.playersMin || '';
                 document.getElementById('game-players-max').value = game.playersMax || '';
+                document.getElementById('game-creator').value = game.creator || '';
                 deleteBtn.style.display = 'flex';
                 deleteBtn.onclick = () => deleteGame(id);
             } else {
@@ -2649,6 +2674,7 @@
                 document.getElementById('game-category-new').value = '';
                 document.getElementById('game-players-min').value = '';
                 document.getElementById('game-players-max').value = '';
+                document.getElementById('game-creator').value = '';
                 deleteBtn.style.display = 'none';
             }
 
@@ -2676,6 +2702,7 @@
 
             const playersMin = document.getElementById('game-players-min').value;
             const playersMax = document.getElementById('game-players-max').value;
+            const creator = document.getElementById('game-creator').value.trim();
 
             if (!name || !url) {
                 showToast('タイトルとURLは必須項目です', 'warning');
@@ -2691,7 +2718,7 @@
                     }
                     const updatedGame = { 
                         ...games[index], 
-                        id, name, url, image, category, playersMin, playersMax,
+                        id, name, url, image, category, playersMin, playersMax, creator,
                         updatedAt: Date.now()
                     };
                     
@@ -2703,7 +2730,7 @@
                 if (!image) image = generatePlaceholderImage(name);
                 const newGame = {
                     id: games.length > 0 ? Math.max(...games.map(g => g.id)) + 1 : 1,
-                    name, url, image, category, playersMin, playersMax,
+                    name, url, image, category, playersMin, playersMax, creator,
                     createdAt: Date.now(),
                     updatedAt: Date.now(),
                     isPinned: false
