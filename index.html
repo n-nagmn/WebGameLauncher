@@ -1864,7 +1864,6 @@
             if (_imageCache[url]) return _imageCache[url];
             const img = new Image();
             img.src = url;
-            img.onload = () => img.classList.add('loaded');
             // LRU eviction
             if (_imageCacheOrder.length >= _imageCacheMax) {
                 const oldest = _imageCacheOrder.shift();
@@ -2463,21 +2462,15 @@
                     ${creatorBadge}
                     <button class="pin-btn" title="${game.isPinned ? '固定を解除' : '位置を固定'}" onclick="App.togglePin(${game.id}, event)">${game.isPinned ? '✖️' : '📌'}</button>
                     <button class="edit-btn" title="編集" onclick="App.openGameModal(${game.id}, event)" aria-label="${escapeHtml(game.name)}を編集">✎</button>
-                    <img alt="" loading="lazy">
+                    <img alt="">
                     <div class="title-bar" title="${escapeHtml(game.name)}">${escapeHtml(game.name)}</div>
                     ${catHtml}
                 `;
                 const img = card.querySelector('img');
                 if (img) {
-                    const cached = getCachedImage(imgUrl);
-                    if (cached && cached.complete && cached.naturalWidth > 0) {
-                        // Already decoded in cache — reuse source, show immediately
-                        img.src = cached.src;
-                        img.classList.add('loaded');
-                    } else {
-                        img.src = imgUrl;
-                        img.onload = () => img.classList.add('loaded');
-                    }
+                    getCachedImage(imgUrl); // fire-and-forget: kick off background decode in cache
+                    img.src = imgUrl;
+                    img.onload = () => img.classList.add('loaded');
                     img.onerror = () => {
                         const ph = generatePlaceholderImage(game.name);
                         if (img.src !== ph) img.src = ph;
