@@ -1970,6 +1970,18 @@
                                 }
                             });
                         }
+                        // 楽観的更新の blob: URL をサーバー URL で置き換え
+                        newMessages.forEach(m => {
+                            const local = chatMessages.find(lm => lm.id === m.id);
+                            if (local && local.imageUrl && local.imageUrl.startsWith('blob:')) {
+                                if (m.imageUrl && !m.imageUrl.startsWith('blob:')) {
+                                    m.imageUrl = m.imageUrl; // サーバーURLを優先
+                                }
+                                // URL.createObjectURL のメモリリーク防止
+                                URL.revokeObjectURL(local.imageUrl);
+                            }
+                        });
+                        
                         chatMessages = newMessages;
                         initialChatLoaded = true;
                         renderChat();
@@ -2028,7 +2040,7 @@
                                 return `<button class="reaction-btn ${reacted ? 'reacted' : ''}" onclick="App.reactMessage('${emoji}', ${msg.timestamp}, false)">${App.renderStampContent(emoji)} <span>${count}</span></button>`;
                             }).join('')}
                             <button class="add-reaction-btn reaction-btn" style="width: 24px; justify-content: center;" onclick="App.toggleReactionPicker(${msg.timestamp}, false, this, event)">+</button>
-                            <button class="reaction-btn" style="width: 24px; justify-content: center;" onclick="App.startReply(false, ${msg.timestamp})" title="返信">↩</button>
+                            <button class="reaction-btn" style="width: 24px; justify-content: center;" onclick='App.startReply(false, ${JSON.stringify(msg.id || msg.timestamp)}, ${msg.timestamp})' title="返信">↩</button>
                         </div>
                     </div>
                 `;
@@ -2801,6 +2813,14 @@
             if (!/^https?:\/\//i.test(url)) {
                 url = 'https://' + url;
             }
+            
+            // プレイ人数の検証: min <= max
+            const pMin = parseInt(playersMin, 10) || 0;
+            const pMax = parseInt(playersMax, 10) || 0;
+            if (pMin > 0 && pMax > 0 && pMin > pMax) {
+                showToast('最小人数は最大人数以下にしてください', 'warning');
+                return;
+            }
 
             if (idStr) {
                 const id = parseInt(idStr, 10);
@@ -3025,7 +3045,7 @@
                         if (Array.isArray(imported)) {
                             importedGames = imported.map(g => ({ ...g, createdAt: g.createdAt || Date.now() }));
                         } else if (imported && typeof imported === 'object') {
-                            if (Array.isArray(imported.games)) importedGames = imported.games;
+                            if (Array.isArray(imported.games)) importedGames = imported.games.map(g => ({ ...g, createdAt: g.createdAt || Date.now() }));
                             if (imported.serverConfig) {
                                 serverConfig = { ...DEFAULT_SERVER_CONFIG, ...imported.serverConfig };
                                 saveConfigToServer();
@@ -3155,6 +3175,9 @@
                 return;
             }
             const filename = filenames[0];
+            if (!confirm('このバックアップから復元すると、現在のデータは上書きされます。\nよろしいですか？')) {
+                return;
+            }
             try {
                 const res = await fetch('./manage_backups.php', {
                     method: 'POST',
@@ -3178,6 +3201,9 @@
             const filenames = Array.from(select.selectedOptions).map(opt => opt.value).filter(v => v !== '');
             if (filenames.length === 0) {
                 showToast('削除するバックアップを選択してください', 'warning');
+                return;
+            }
+            if (!confirm(filenames.length + '件のバックアップを削除しますか？\nこの操作は取り消せません。')) {
                 return;
             }
             try {
@@ -3521,6 +3547,17 @@
                                 }
                             });
                         }
+                        // 楽観的更新の blob: URL をサーバー URL で置き換え
+                        newMessages.forEach(m => {
+                            const local = shareMessages.find(lm => lm.id === m.id);
+                            if (local && local.imageUrl && local.imageUrl.startsWith('blob:')) {
+                                if (m.imageUrl && !m.imageUrl.startsWith('blob:')) {
+                                    m.imageUrl = m.imageUrl; // サーバーURLを優先
+                                }
+                                URL.revokeObjectURL(local.imageUrl);
+                            }
+                        });
+                        
                         shareMessages = newMessages;
                         initialShareLoaded = true;
                         renderShare();
@@ -3579,7 +3616,7 @@
                                 return `<button class="reaction-btn ${reacted ? 'reacted' : ''}" onclick="App.reactMessage('${emoji}', ${msg.timestamp}, true)">${App.renderStampContent(emoji)} <span>${count}</span></button>`;
                             }).join('')}
                             <button class="add-reaction-btn reaction-btn" style="width: 24px; justify-content: center;" onclick="App.toggleReactionPicker(${msg.timestamp}, true, this, event)">+</button>
-                            <button class="reaction-btn" style="width: 24px; justify-content: center;" onclick="App.startReply(true, ${msg.timestamp})" title="返信">↩</button>
+                            <button class="reaction-btn" style="width: 24px; justify-content: center;" onclick='App.startReply(true, ${JSON.stringify(msg.id || msg.timestamp)}, ${msg.timestamp})' title="返信">↩</button>
                         </div>
                     </div>
                 `;
@@ -3632,15 +3669,15 @@
         let currentReplyToChat = null;
         let currentReplyToShare = null;
 
-        function startReply(isShare, timestamp) {
+        function startReply(isShare, idOrTs, timestamp) {
             const msgs = isShare ? shareMessages : chatMessages;
-            const msg = msgs.find(m => m.timestamp === timestamp);
+            const msg = msgs.find(m => (idOrTs && m.id === idOrTs) || m.timestamp === timestamp);
             if (!msg) return;
             const name = msg.name;
             const messageText = msg.message || '';
             const messageSnippet = messageText.length > 30 ? messageText.substring(0, 30) + '...' : messageText;
             
-            const replyObj = { timestamp, name, message: messageSnippet.replace(/\n/g, " ") };
+            const replyObj = { id: msg.id, timestamp: msg.timestamp, name: msg.name, message: messageSnippet.replace(/\n/g, " ") };
             if (isShare) {
                 currentReplyToShare = replyObj;
                 document.getElementById('share-reply-preview').style.display = 'flex';
