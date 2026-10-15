@@ -1555,7 +1555,8 @@
         function addCustomImageStamp(event) {
             const file = event.target.files[0];
             if (file) uploadCustomImageStamp(file);
-            event.target.value = '';
+            // 即座にリセットしない（uploadCustomImageStamp が async で読み取っているため）
+            setTimeout(() => { event.target.value = ''; }, 0);
         }
 
         async function addCustomStamp() {
@@ -1708,9 +1709,10 @@
             `;
 
             const removeFromCache = () => {
-                let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+                let activeNotifs;
+                try { activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}'); } catch(e) { activeNotifs = {}; }
                 delete activeNotifs[notifId];
-                localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs));
+                try { localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs)); } catch(e) {}
             };
 
             const closeBtn = notif.querySelector('.notif-close-btn');
@@ -1796,7 +1798,13 @@
         }
 
         function restoreActiveNotifications() {
-            const activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+            let activeNotifs;
+            try {
+                activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+            } catch (e) {
+                activeNotifs = {};
+            }
+            if (!activeNotifs || typeof activeNotifs !== 'object') return;
             // Sort by timestamp to preserve order
             const sorted = Object.values(activeNotifs).sort((a, b) => a.msg.timestamp - b.msg.timestamp);
             sorted.forEach(item => {
@@ -1988,7 +1996,9 @@
                                 showChatNotification(msg);
                             });
                         } else {
-                            let dismissed = JSON.parse(localStorage.getItem('dismissedChatNotifs') || '[]');
+                            let dismissed;
+                            try { dismissed = JSON.parse(localStorage.getItem('dismissedChatNotifs') || '[]'); } catch(e) { dismissed = []; }
+                            if (!Array.isArray(dismissed)) dismissed = [];
                             newMessages.forEach(msg => {
                                 if (msg.clientId !== myClientId && !dismissed.includes(msg.id)) {
                                     showChatNotification(msg);
@@ -2231,6 +2241,7 @@
         function renderFilters() {
             // Category filter
             const catContainer = document.getElementById('category-filter');
+            if (!catContainer) return;
             const availableCategories = Array.from(new Set(games.map(g => g.category).filter(Boolean)));
             
             // サーバーから取得した順序に基づいて並び替え
@@ -2276,6 +2287,7 @@
 
             // Player filter
             const playerContainer = document.getElementById('player-filter');
+            if (!playerContainer) return;
             let playerHtml = `<div class="player-chip ${currentPlayerFilter === 'all' ? 'active' : ''}" data-players="all" onclick="App.setPlayerFilter('all')">全人数</div>`;
 
             const filterOptions = [
@@ -2295,9 +2307,10 @@
 
         function renderGames() {
             const grid = els.grid;
+            if (!grid) return;
             grid.innerHTML = '';
 
-            const searchTerm = els.searchInput.value.toLowerCase().trim();
+            const searchTerm = els.searchInput ? els.searchInput.value.toLowerCase().trim() : '';
             
             filteredGames = games.filter(game => {
                 const matchesSearch = !searchTerm || game.name.toLowerCase().includes(searchTerm);
@@ -2420,7 +2433,7 @@
                 const imgUrl = game.image || generatePlaceholderImage(game.name);
 
                 let playerBadge = '';
-                if (game.playersMin || game.playersMax) {
+                {
                     const min = game.playersMin ? parseInt(game.playersMin, 10) : null;
                     const max = game.playersMax ? parseInt(game.playersMax, 10) : null;
                     const isMulti = (min && min > 1) || (max && max > 1) || (!min && max && max > 1);
@@ -2696,6 +2709,7 @@
 
         function handleCardKeydown(e, index) {
             const cards = document.querySelectorAll('.game-card:not(.add-card)');
+            if (cards.length === 0 || index >= cards.length) return;
             // 実際の列数を、同じ行にあるカード数で計算
             const firstCard = cards[0];
             let cols = 1;
@@ -2825,6 +2839,7 @@
         }
 
         function closeGameModal() {
+            if (!els.gameModal) return;
             els.gameModal.classList.remove('active');
             if (focusedCardIndex >= 0) {
                 const cards = document.querySelectorAll('.game-card:not(.add-card)');
@@ -3008,6 +3023,7 @@
         }
 
         function closeSettings() {
+            if (!els.settingsModal) return;
             els.settingsModal.classList.remove('active');
         }
 
@@ -3378,6 +3394,7 @@
             els.gameModal = document.getElementById('game-modal');
             els.settingsModal = document.getElementById('settings-modal');
             els.searchInput = document.getElementById('search-input');
+            if (!els.searchInput) return;
 
             // Load config, games, stamps in parallel for faster initial load
             const [configRes, gamesRes, stampsRes] = await Promise.allSettled([
@@ -3616,7 +3633,9 @@
                                 showChatNotification(msg, true);
                             });
                         } else {
-                            let dismissed = JSON.parse(localStorage.getItem('dismissedShareNotifs') || '[]');
+                            let dismissed;
+                            try { dismissed = JSON.parse(localStorage.getItem('dismissedShareNotifs') || '[]'); } catch(e) { dismissed = []; }
+                            if (!Array.isArray(dismissed)) dismissed = [];
                             newMessages.forEach(msg => {
                                 if (msg.clientId !== myClientId && !dismissed.includes(msg.id)) {
                                     showChatNotification(msg, true);
@@ -3713,7 +3732,8 @@
                     if (ts === msg.timestamp || (msg.name === nName && msg.message === nMsg)) {
                         notif.classList.add('hiding');
                         setTimeout(() => notif.remove(), 300);
-                        let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+                        let activeNotifs;
+                        try { activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}'); } catch(e) { activeNotifs = {}; }
                         const notifId = notif.id ? notif.id.replace('notif-', '') : '';
                         if (notifId) {
                             delete activeNotifs[notifId];
@@ -3838,7 +3858,8 @@
                     if (ts === msg.timestamp || (msg.name === nName && msg.message === nMsg)) {
                         notif.classList.add('hiding');
                         setTimeout(() => notif.remove(), 300);
-                        let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+                        let activeNotifs;
+                        try { activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}'); } catch(e) { activeNotifs = {}; }
                         const notifId = notif.id ? notif.id.replace('notif-', '') : '';
                         if (notifId) {
                             delete activeNotifs[notifId];
