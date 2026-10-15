@@ -1707,12 +1707,14 @@
                     notif.classList.add('hiding');
                     setTimeout(() => notif.remove(), 300);
                     removeFromCache();
-                    const storageKey = isShare ? 'dismissedShareNotifs' : 'dismissedChatNotifs';
-                    let dismissed = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                    if (!dismissed.includes(msg.id)) {
-                        dismissed.push(msg.id);
-                        if (dismissed.length > 200) dismissed = dismissed.slice(-200);
-                        localStorage.setItem(storageKey, JSON.stringify(dismissed));
+                    if (msg.id) {
+                        const storageKey = isShare ? 'dismissedShareNotifs' : 'dismissedChatNotifs';
+                        let dismissed = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                        if (!dismissed.includes(msg.id)) {
+                            dismissed.push(msg.id);
+                            if (dismissed.length > 200) dismissed = dismissed.slice(-200);
+                            localStorage.setItem(storageKey, JSON.stringify(dismissed));
+                        }
                     }
                 };
             }
@@ -1722,12 +1724,14 @@
                 notif.classList.add('hiding');
                 setTimeout(() => notif.remove(), 300);
                 removeFromCache();
-                const storageKey = isShare ? 'dismissedShareNotifs' : 'dismissedChatNotifs';
-                let dismissed = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                if (!dismissed.includes(msg.id)) {
-                    dismissed.push(msg.id);
-                    if (dismissed.length > 200) dismissed = dismissed.slice(-200);
-                    localStorage.setItem(storageKey, JSON.stringify(dismissed));
+                if (msg.id) {
+                    const storageKey = isShare ? 'dismissedShareNotifs' : 'dismissedChatNotifs';
+                    let dismissed = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                    if (!dismissed.includes(msg.id)) {
+                        dismissed.push(msg.id);
+                        if (dismissed.length > 200) dismissed = dismissed.slice(-200);
+                        localStorage.setItem(storageKey, JSON.stringify(dismissed));
+                    }
                 }
                 if (msg.gameId) {
                     openChatGame(msg.gameId);
@@ -1992,7 +1996,7 @@
                                 
                                 <span>${timeStr}</span>
                             </div>
-                            <button onclick="App.deleteChatMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>
+                            <button onclick='App.deleteChatMessage(${JSON.stringify(msg.id || msg.timestamp)}, ${msg.timestamp})' title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>
                         </div>
                         ${gameHtml}
                         ${(() => { let msgText = msg.message || ''; if (msgText === '') return ''; if (msgText.toLowerCase().startsWith('/a')) { return `<div class="chat-message-text aa-font">${escapeHtml(msgText.replace(/^\/a(?:\r?\n| )?/i, ''))}</div>`; } return `<div class="chat-message-text">${escapeHtml(msgText)}</div>`; })()}
@@ -2621,7 +2625,13 @@
 
         function handleCardKeydown(e, index) {
             const cards = document.querySelectorAll('.game-card:not(.add-card)');
-            const cols = Math.floor(els.grid.offsetWidth / (els.grid.children[0]?.offsetWidth || 240));
+            // 実際の列数を、同じ行にあるカード数で計算
+            const firstCard = cards[0];
+            let cols = 1;
+            if (firstCard && cards.length > 1) {
+                const firstTop = firstCard.getBoundingClientRect().top;
+                cols = Array.from(cards).filter(c => Math.abs(c.getBoundingClientRect().top - firstTop) < 5).length;
+            }
 
             switch(e.key) {
                 case 'ArrowRight':
@@ -2769,6 +2779,10 @@
                 showToast('タイトルとURLは必須項目です', 'warning');
                 return;
             }
+            // URLにプロトコルがない場合は https:// を補完
+            if (!/^https?:\/\//i.test(url)) {
+                url = 'https://' + url;
+            }
 
             if (idStr) {
                 const id = parseInt(idStr, 10);
@@ -2789,8 +2803,9 @@
                 }
             } else {
                 if (!image) image = generatePlaceholderImage(name);
+                const newId = Date.now();
                 const newGame = {
-                    id: games.length > 0 ? Math.max(...games.map(g => g.id)) + 1 : 1,
+                    id: newId,
                     name, url, image, category, playersMin, playersMax, creator,
                     createdAt: Date.now(),
                     updatedAt: Date.now(),
@@ -3270,7 +3285,6 @@
                 if (res.ok) {
                     games = await res.json();
                 }
-                await fetchStamps();
             } catch (e) {
                 console.warn('Games load failed');
                 const localGames = localStorage.getItem('games_backup');
@@ -3279,6 +3293,9 @@
                     showToast('サーバーから読み込めなかったため、ローカルバックアップを復元しました', 'warning');
                 }
             }
+            
+            // Load Stamps (separate try to avoid affecting games fallback)
+            await fetchStamps();
 
             renderGames();
             restoreActiveNotifications();
@@ -3501,7 +3518,7 @@
                                 
                                 <span>${timeStr}</span>
                             </div>
-                            <button onclick="App.deleteShareMessage(${msg.timestamp})" title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>
+                            <button onclick='App.deleteShareMessage(${JSON.stringify(msg.id || msg.timestamp)}, ${msg.timestamp})' title="削除" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 14px; padding: 0 4px; opacity: 0.6;">×</button>
                         </div>
                         ${gameHtml}
                         ${(() => { let msgText = msg.message || ''; if (msgText === '') return ''; if (msgText.toLowerCase().startsWith('/a')) { return `<div class="chat-message-text aa-font">${escapeHtml(msgText.replace(/^\/a(?:\r?\n| )?/i, ''))}</div>`; } return `<div class="chat-message-text">${escapeHtml(msgText)}</div>`; })()}
@@ -3524,16 +3541,16 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        async function deleteShareMessage(timestamp) {
-            // Remove notification immediately
-            const msg = shareMessages.find(m => m.timestamp === timestamp);
+        async function deleteShareMessage(idOrTs, timestamp) {
+            // Remove notification immediately (match by id first, fallback to timestamp)
+            const msg = shareMessages.find(m => (idOrTs && m.id === idOrTs) || m.timestamp === timestamp);
             if (msg) {
                 document.querySelectorAll('.chat-notification').forEach(notif => {
                     if (notif.dataset.isShare !== 'true') return;
                     const ts = parseInt(notif.dataset.timestamp);
                     const nName = notif.dataset.name;
                     const nMsg = notif.dataset.messageText;
-                    if (ts === timestamp || (msg.name === nName && msg.message === nMsg)) {
+                    if (ts === msg.timestamp || (msg.name === nName && msg.message === nMsg)) {
                         notif.classList.add('hiding');
                         setTimeout(() => notif.remove(), 300);
                         let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
@@ -3550,7 +3567,7 @@
                 const res = await fetch('./post_share.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'delete', timestamp: timestamp, clientId: myClientId })
+                    body: JSON.stringify({ action: 'delete', timestamp: msg ? msg.timestamp : timestamp, id: idOrTs, clientId: myClientId })
                 });
                 if (res.ok) {
                     fetchShare();
@@ -3649,16 +3666,16 @@
             }
         });
 
-        async function deleteChatMessage(timestamp) {
-            // Remove notification immediately
-            const msg = chatMessages.find(m => m.timestamp === timestamp);
+        async function deleteChatMessage(idOrTs, timestamp) {
+            // Remove notification immediately (match by id first, fallback to timestamp)
+            const msg = chatMessages.find(m => (idOrTs && m.id === idOrTs) || m.timestamp === timestamp);
             if (msg) {
                 document.querySelectorAll('.chat-notification').forEach(notif => {
                     if (notif.dataset.isShare === 'true') return;
                     const ts = parseInt(notif.dataset.timestamp);
                     const nName = notif.dataset.name;
                     const nMsg = notif.dataset.messageText;
-                    if (ts === timestamp || (msg.name === nName && msg.message === nMsg)) {
+                    if (ts === msg.timestamp || (msg.name === nName && msg.message === nMsg)) {
                         notif.classList.add('hiding');
                         setTimeout(() => notif.remove(), 300);
                         let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
@@ -3675,7 +3692,7 @@
                 const res = await fetch('./post_chat.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'delete', timestamp: timestamp, clientId: myClientId })
+                    body: JSON.stringify({ action: 'delete', timestamp: msg ? msg.timestamp : timestamp, id: idOrTs, clientId: myClientId })
                 });
                 if (res.ok) {
                     fetchChat();

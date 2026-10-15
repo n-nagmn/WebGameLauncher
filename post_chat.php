@@ -95,13 +95,28 @@ if ($action === 'react') {
 
 if ($action === 'delete') {
     $timestamp_to_delete = isset($decoded['timestamp']) ? intval($decoded['timestamp']) : 0;
-    if ($timestamp_to_delete > 0) {
+    $id_to_delete = isset($decoded['id']) ? trim($decoded['id']) : '';
+    if ($id_to_delete !== '') {
+        // Delete by message ID (preferred)
         $chat_data = [];
         if (file_exists($file_path)) {
             $raw = file_get_contents($file_path);
             $chat_data = json_decode($raw, true) ?: [];
         }
-        // Filter out the message
+        $chat_data = array_values(array_filter($chat_data, function($msg) use ($id_to_delete) {
+            return (!isset($msg['id']) || $msg['id'] !== $id_to_delete);
+        }));
+        
+        @file_put_contents($file_path, json_encode($chat_data, JSON_UNESCAPED_UNICODE));
+        @chmod($file_path, 0666);
+        echo json_encode(["status" => "success"]);
+    } elseif ($timestamp_to_delete > 0) {
+        // Fallback: delete by timestamp
+        $chat_data = [];
+        if (file_exists($file_path)) {
+            $raw = file_get_contents($file_path);
+            $chat_data = json_decode($raw, true) ?: [];
+        }
         $chat_data = array_values(array_filter($chat_data, function($msg) use ($timestamp_to_delete) {
             return (!isset($msg['timestamp']) || $msg['timestamp'] !== $timestamp_to_delete);
         }));
@@ -111,7 +126,7 @@ if ($action === 'delete') {
         echo json_encode(["status" => "success"]);
     } else {
         http_response_code(400);
-        echo json_encode(["status" => "error", "message" => "Invalid timestamp"]);
+        echo json_encode(["status" => "error", "message" => "Invalid delete request"]);
     }
     exit;
 }
