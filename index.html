@@ -1855,23 +1855,55 @@
             return dataUrl;
         }
 
-        // --- Image Cache (pre-decode via Image objects) ---
-        const _imageCache = {};
+        // --- Image Cache (pre-fetch via Image objects, store dataURL) ---
+        const _imageCache = {};   // url -> { dataUrl, loading }
         const _imageCacheOrder = [];
         const _imageCacheMax = 100;
-        function getCachedImage(url) {
-            if (!url) return null;
-            if (_imageCache[url]) return _imageCache[url];
-            const img = new Image();
-            img.src = url;
-            // LRU eviction
+
+        // Fire-and-forget: start background load, return null (caller uses fallback path)
+        // Once loaded, subsequent calls return the dataURL for instant display.
+        function preloadImage(url) {
+            if (!url || url.startsWith('data:')) return;
+            if (_imageCache[url]) return;
+            const entry = { dataUrl: null, loading: true };
             if (_imageCacheOrder.length >= _imageCacheMax) {
                 const oldest = _imageCacheOrder.shift();
                 delete _imageCache[oldest];
             }
-            _imageCache[url] = img;
+            _imageCache[url] = entry;
             _imageCacheOrder.push(url);
-            return img;
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                    entry.dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    entry.loading = false;
+                } catch (e) {
+                    // CORS taint — fall back to just marking as loaded
+                    entry.dataUrl = url;
+                    entry.loading = false;
+                }
+            };
+            img.onerror = () => {
+                entry.dataUrl = null;
+                entry.loading = false;
+                delete _imageCache[url];
+                const idx = _imageCacheOrder.indexOf(url);
+                if (idx !== -1) _imageCacheOrder.splice(idx, 1);
+            };
+            img.src = url;
+        }
+
+        // Returns { dataUrl } if ready, null if still loading
+        function getCachedDataUrl(url) {
+            if (!url) return null;
+            const entry = _imageCache[url];
+            if (entry && entry.dataUrl) return entry.dataUrl;
+            return null;
         }
 
         // --- Server Communication ---
@@ -2468,13 +2500,21 @@
                 `;
                 const img = card.querySelector('img');
                 if (img) {
-                    getCachedImage(imgUrl); // fire-and-forget: kick off background decode in cache
-                    img.src = imgUrl;
-                    img.onload = () => img.classList.add('loaded');
-                    img.onerror = () => {
-                        const ph = generatePlaceholderImage(game.name);
-                        if (img.src !== ph) img.src = ph;
-                    };
+                    const cachedUrl = getCachedDataUrl(imgUrl);
+                    if (cachedUrl) {
+                        // Already pre-fetched — use dataURL, no network request needed
+                        img.src = cachedUrl;
+                        img.classList.add('loaded');
+                    } else {
+                        // First render: start background pre-fetch, use original URL
+                        preloadImage(imgUrl);
+                        img.src = imgUrl;
+                        img.onload = () => img.classList.add('loaded');
+                        img.onerror = () => {
+                            const ph = generatePlaceholderImage(game.name);
+                            if (img.src !== ph) img.src = ph;
+                        };
+                    }
                 }
                 fragment.appendChild(card);
             });
