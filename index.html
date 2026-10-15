@@ -1476,7 +1476,15 @@
 
         // --- State ---
         let serverConfig = { ...DEFAULT_SERVER_CONFIG };
-        let localConfig = JSON.parse(localStorage.getItem('launcher_local_config')) || { ...DEFAULT_LOCAL_CONFIG };
+        let localConfig;
+        try {
+            localConfig = JSON.parse(localStorage.getItem('launcher_local_config'));
+        } catch(e) {
+            localConfig = null;
+        }
+        if (!localConfig || typeof localConfig !== 'object' || Array.isArray(localConfig)) {
+            localConfig = { ...DEFAULT_LOCAL_CONFIG };
+        }
         
         let games = [];
         let customStamps = [];
@@ -1727,11 +1735,13 @@
                     removeFromCache();
                     if (msg.id) {
                         const storageKey = isShare ? 'dismissedShareNotifs' : 'dismissedChatNotifs';
-                        let dismissed = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                        let dismissed;
+                        try { dismissed = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) { dismissed = []; }
+                        if (!Array.isArray(dismissed)) dismissed = [];
                         if (!dismissed.includes(msg.id)) {
                             dismissed.push(msg.id);
                             if (dismissed.length > 200) dismissed = dismissed.slice(-200);
-                            localStorage.setItem(storageKey, JSON.stringify(dismissed));
+                            try { localStorage.setItem(storageKey, JSON.stringify(dismissed)); } catch(e) {}
                         }
                     }
                 };
@@ -1744,11 +1754,13 @@
                 removeFromCache();
                 if (msg.id) {
                     const storageKey = isShare ? 'dismissedShareNotifs' : 'dismissedChatNotifs';
-                    let dismissed = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                    let dismissed;
+                    try { dismissed = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) { dismissed = []; }
+                    if (!Array.isArray(dismissed)) dismissed = [];
                     if (!dismissed.includes(msg.id)) {
                         dismissed.push(msg.id);
                         if (dismissed.length > 200) dismissed = dismissed.slice(-200);
-                        localStorage.setItem(storageKey, JSON.stringify(dismissed));
+                        try { localStorage.setItem(storageKey, JSON.stringify(dismissed)); } catch(e) {}
                     }
                 }
                 if (msg.gameId) {
@@ -1757,7 +1769,9 @@
             };
 
             // Save to active notifications cache
-            let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+            let activeNotifs;
+            try { activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}'); } catch(e) { activeNotifs = {}; }
+            if (!activeNotifs || typeof activeNotifs !== 'object') activeNotifs = {};
             // msg を保存する前に blob: URL を除去（session 限定であり、reload 後に無効になるため）
             const safeMsg = { ...msg };
             if (safeMsg.imageUrl && safeMsg.imageUrl.startsWith('blob:')) safeMsg.imageUrl = null;
@@ -3637,11 +3651,12 @@
                                 setTimeout(() => notif.remove(), 300);
 
                                 // Remove from cache
-                                let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
+                                let activeNotifs;
+                                try { activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}'); } catch(e) { activeNotifs = {}; }
                                 const notifId = notif.id ? notif.id.replace('notif-', '') : '';
                                 if (notifId) {
                                     delete activeNotifs[notifId];
-                                    localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs));
+                                    try { localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs)); } catch(e) {}
                                 }
                             }
                         });
