@@ -1588,6 +1588,7 @@
         let isRankingActive = false;
         let serverTimestamps = null;
         let isSaving = false;
+        let isDragging = false;
         
         // Chat state
         let chatMessages = [];
@@ -1617,7 +1618,8 @@
 
         const htmlEscapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
         function escapeHtml(str) {
-            if (typeof str !== 'string') return '';
+            if (str === null || str === undefined) return '';
+            if (typeof str !== 'string') str = String(str);
             return str.replace(/[&<>"']/g, match => htmlEscapes[match]);
         }
 
@@ -1794,8 +1796,15 @@
         }
 
         const _placeholderCache = {};
+        const _placeholderCacheOrder = [];
+        const _placeholderCacheMax = 50;
         function generatePlaceholderImage(title) {
             if (_placeholderCache[title]) return _placeholderCache[title];
+            // キャッシュが上限を超えた場合、最古のエントリを削除
+            if (_placeholderCacheOrder.length >= _placeholderCacheMax) {
+                const oldest = _placeholderCacheOrder.shift();
+                delete _placeholderCache[oldest];
+            }
             const canvas = document.createElement('canvas');
             canvas.width = 400; 
             canvas.height = 225;
@@ -1824,6 +1833,7 @@
             ctx.fillText(initials, canvas.width / 2, canvas.height / 2);
             const dataUrl = canvas.toDataURL('image/png');
             _placeholderCache[title] = dataUrl;
+            _placeholderCacheOrder.push(title);
             return dataUrl;
         }
 
@@ -1832,6 +1842,10 @@
         async function saveGamesToServer() {
             isSaving = true;
             try {
+                // 保存前のローカル playCount を記録（競合防止用）
+                const localPlayCounts = {};
+                games.forEach(g => { localPlayCounts[g.id] = g.playCount || 0; });
+                
                 const response = await fetch('./save_games.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1844,6 +1858,21 @@
                     const tsRes = await fetch('./check_timestamp.php?t=' + Date.now());
                     if (tsRes.ok) serverTimestamps = await tsRes.json();
                 } catch(e) {}
+                
+                // 保存後にサーバー状態を再取得し、他のクライアントの playCount 増加をマージ
+                try {
+                    const latestRes = await fetch('./games.json?t=' + Date.now());
+                    if (latestRes.ok) {
+                        const serverGames = await latestRes.json();
+                        games.forEach(g => {
+                            const serverGame = serverGames.find(sg => sg.id === g.id);
+                            if (serverGame && (serverGame.playCount || 0) > localPlayCounts[g.id]) {
+                                g.playCount = serverGame.playCount;
+                            }
+                        });
+                    }
+                } catch(e) {}
+                
                 isSaving = false;
                 
                 return true;
@@ -2040,8 +2069,12 @@
         }
 
         function closeChat() {
-            document.body.classList.remove('chat-open');
             document.getElementById('chat-sidebar').classList.remove('active');
+            // 共有サイドバーが開いている場合は chat-open を維持
+            const shareSidebar = document.getElementById('share-sidebar');
+            if (!(shareSidebar && shareSidebar.classList.contains('active'))) {
+                document.body.classList.remove('chat-open');
+            }
         }
 
         async function sendChatMessage() {
@@ -2103,15 +2136,20 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, message, gameId, clientId: myClientId, replyTo: currentReplyToChat })
                 });
-                cancelReply(false);
                 if (res.ok) {
+                    cancelReply(false);
                     showChatNotification(tempMsg);
                     fetchChat();
                 } else {
                     showToast('チャット送信失敗', 'error');
+                    // 送信失敗時は一時メッセージを削除
+                    const idx = chatMessages.indexOf(tempMsg);
+                    if (idx !== -1) { chatMessages.splice(idx, 1); renderChat(); }
                 }
             } catch (e) {
                 showToast('通信エラー', 'error');
+                const idx = chatMessages.indexOf(tempMsg);
+                if (idx !== -1) { chatMessages.splice(idx, 1); renderChat(); }
             }
         }
 
@@ -2123,6 +2161,12 @@
         }
 
         // --- Rendering ---
+
+        // renderGames のラッパー（ドラッグ中はスキップ）
+        function safeRenderGames() {
+            if (isDragging) return;
+            renderGames();
+        }
 
         function renderFilters() {
             // Category filter
@@ -2479,7 +2523,7 @@
                     games.splice(insertIndex, 0, playedGame);
                     
                     saveGamesToServer();       
-                    renderGames();             
+                    safeRenderGames();             
                 }
             } else {
                 // ピン留めされている場合は時刻だけ更新
@@ -2515,6 +2559,7 @@
                 return;
             }
             dragStartIndex = index;
+            isDragging = true;
             e.currentTarget.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', index);
@@ -2569,6 +2614,7 @@
                 c.style.borderColor = '';
             });
             dragStartIndex = null;
+            isDragging = false;
         }
 
         // --- Keyboard Navigation ---
@@ -2690,6 +2736,7 @@
                 document.getElementById('game-players-max').value = '';
                 document.getElementById('game-creator').value = '';
                 deleteBtn.style.display = 'none';
+                deleteBtn.onclick = null;
             }
 
             els.gameModal.classList.add('active');
@@ -2912,7 +2959,8 @@
             document.body.classList.toggle('light-mode', localConfig.isLightMode === true);
             
             // Apply Server Config
-            document.body.style.backgroundImage = serverConfig.bgImage ? `url('${serverConfig.bgImage}')` : 'none';
+            const bgUrl = serverConfig.bgImage ? serverConfig.bgImage.replace(/'/g, "\\'") : '';
+            document.body.style.backgroundImage = bgUrl ? `url('${bgUrl}')` : 'none';
         }
 
         // --- Data Management ---
@@ -3144,7 +3192,7 @@
             const stampSettingsSection = document.getElementById('stamp-settings-section');
             
             window.addEventListener('paste', e => {
-                if (els.settingsModal && els.settingsModal.style.display !== 'none') {
+                if (els.settingsModal && els.settingsModal.classList.contains('active')) {
                     if (e.clipboardData && e.clipboardData.items) {
                         for (let i = 0; i < e.clipboardData.items.length; i++) {
                             if (e.clipboardData.items[i].type.startsWith('image/')) {
@@ -3324,7 +3372,7 @@
                                 const cRes = await fetch('./config.json?t=' + Date.now());
                                 if (cRes.ok) { const loadedConfig = await cRes.json(); serverConfig = { ...DEFAULT_SERVER_CONFIG, ...loadedConfig }; applyConfig(); shouldRender = true; }
                             }
-                            if (shouldRender) { renderGames(); renderFilters(); }
+                            if (shouldRender) { safeRenderGames(); renderFilters(); }
                         }
                     } else {
                         serverTimestamps = ts;
@@ -3334,6 +3382,7 @@
 
             // 1分ごとに表示を更新して「何分前アクティブ」の時間を最新に保つ
             setInterval(() => {
+                if (isDragging) return;
                 renderGames();
             }, 60000);
 
@@ -3656,7 +3705,11 @@
 
         function closeShare() {
             document.getElementById('share-sidebar').classList.remove('active');
-            document.body.classList.remove('chat-open');
+            // チャットサイドバーが開いている場合は chat-open を維持
+            const chatSidebar = document.getElementById('chat-sidebar');
+            if (!(chatSidebar && chatSidebar.classList.contains('active'))) {
+                document.body.classList.remove('chat-open');
+            }
         }
 
         function openImageModal(url) {
@@ -3664,6 +3717,7 @@
             const img = document.getElementById('image-modal-img');
             img.src = url;
             modal.style.display = 'flex';
+            modal.style.opacity = '0';
             setTimeout(() => modal.style.opacity = '1', 10);
         }
 
@@ -3786,7 +3840,6 @@
             if (file) {
                 formData.append('image', file);
             }
-            cancelReply(true);
             
             try {
                 const response = await fetch('post_share.php', {
@@ -3797,6 +3850,7 @@
                 const data = await response.json();
                 
                 if (data.status === 'success') {
+                    cancelReply(true);
                     showChatNotification(tempMsg, true);
                     localStorage.setItem('chat_name', name);
                     document.getElementById('share-name').value = name;
@@ -3810,9 +3864,14 @@
                     fetchShare();
                 } else {
                     showToast('エラー: ' + data.message, 'error');
+                    // 送信失敗時は一時メッセージを削除
+                    const idx = shareMessages.indexOf(tempMsg);
+                    if (idx !== -1) { shareMessages.splice(idx, 1); renderShare(); }
                 }
             } catch (e) {
                 showToast('通信エラー', 'error');
+                const idx = shareMessages.indexOf(tempMsg);
+                if (idx !== -1) { shareMessages.splice(idx, 1); renderShare(); }
             } finally {
                 btn.disabled = false;
                 btn.innerText = '投稿する';
@@ -3852,9 +3911,15 @@
     </script>
 
     <!-- Image Lightbox Modal -->
-    <div class="modal" id="image-modal" role="dialog" aria-modal="true" aria-label="画像拡大" onclick="App.closeImageModal()">
+    <div class="modal" id="image-modal" role="dialog" aria-modal="true" aria-label="画像拡大">
         <img id="image-modal-img" src="" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); cursor: zoom-out;">
     </div>
+    <script>
+        // 画像ライトボックス：背景クリックで閉じる（画像クリックは閉じない）
+        document.getElementById('image-modal').addEventListener('click', function(e) {
+            if (e.target === this) App.closeImageModal();
+        });
+    </script>
 
     <!-- Reaction Picker -->
     <div id="reaction-picker" style="display: none; position: fixed; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1000; gap: 4px; flex-wrap: wrap; max-width: 200px;"></div>
