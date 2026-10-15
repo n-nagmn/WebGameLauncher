@@ -1753,13 +1753,24 @@
 
             // Save to active notifications cache
             let activeNotifs = JSON.parse(localStorage.getItem('activeChatNotifs') || '{}');
-            activeNotifs[notifId] = { msg, isShare, timestamp: Date.now() };
+            // msg を保存する前に blob: URL を除去（session 限定であり、reload 後に無効になるため）
+            const safeMsg = { ...msg };
+            if (safeMsg.imageUrl && safeMsg.imageUrl.startsWith('blob:')) safeMsg.imageUrl = null;
+            activeNotifs[notifId] = { msg: safeMsg, isShare, timestamp: Date.now() };
             // Prune very old active notifications (e.g., older than 3 days)
             const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
             for (let key in activeNotifs) {
                 if (activeNotifs[key].timestamp < threeDaysAgo) delete activeNotifs[key];
             }
-            localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs));
+            try {
+                localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs));
+            } catch (e) {
+                // ストレージが埋まった場合: 古いものを削除してリトライ
+                for (let key in activeNotifs) {
+                    if (key !== notifId) delete activeNotifs[key];
+                }
+                try { localStorage.setItem('activeChatNotifs', JSON.stringify(activeNotifs)); } catch(e2) {}
+            }
 
             container.prepend(notif);
 
@@ -3118,6 +3129,7 @@
                         games = importedGames;
                         applyConfig();
                         renderGames();
+                        renderFilters();
                         saveGamesToServer();
                         closeSettings();
                         showToast('データのインポートが完了しました', 'success');
@@ -3379,6 +3391,8 @@
                 try {
                     const loadedConfig = await configRes.value.json();
                     serverConfig = { ...DEFAULT_SERVER_CONFIG, ...loadedConfig };
+                    // 保存バックアップ: サーバー設定のローカルフォールバック用
+                    try { localStorage.setItem('config_backup', JSON.stringify(serverConfig)); } catch(e) {}
                 } catch (e) {
                     console.warn('Config parse failed');
                 }
@@ -3442,6 +3456,7 @@
                         saveGamesToServer();
                         showToast('ローカルからプレイ回数データを自動復元しました', 'success');
                         renderGames();
+                        renderFilters();
                     }
                 } catch(e) {}
             }
