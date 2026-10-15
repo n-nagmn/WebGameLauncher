@@ -1777,7 +1777,8 @@
             const sorted = Object.values(activeNotifs).sort((a, b) => a.msg.timestamp - b.msg.timestamp);
             sorted.forEach(item => {
                 // If it's already shown (shouldn't happen on init but just in case), skip
-                if (document.getElementById('notif-' + (item.isShare ? 'share_' : 'chat_') + item.msg.id)) return;
+                const msgId = item.msg.id || ('temp_' + item.msg.timestamp);
+                if (document.getElementById('notif-' + (item.isShare ? 'share_' : 'chat_') + msgId)) return;
                 showChatNotification(item.msg, item.isShare);
             });
         }
@@ -1864,17 +1865,28 @@
                 } catch(e) {}
                 
                 // 保存後にサーバー状態を再取得し、他のクライアントの playCount 増加をマージ
+                // 自分の増加分（localPlayCounts + 1）以上は常にローカルを優先
                 try {
                     const latestRes = await fetch('./games.json?t=' + Date.now());
                     if (latestRes.ok) {
                         const serverGames = await latestRes.json();
                         games.forEach(g => {
                             const serverGame = serverGames.find(sg => sg.id === g.id);
-                            if (serverGame && (serverGame.playCount || 0) > localPlayCounts[g.id]) {
-                                g.playCount = serverGame.playCount;
+                            if (serverGame) {
+                                const localCount = localPlayCounts[g.id] || 0;
+                                const serverCount = serverGame.playCount || 0;
+                                // サーバーがローカルより大きい場合のみ採用（自分の増加分を含む）
+                                if (serverCount > localCount) {
+                                    g.playCount = serverCount;
+                                }
                             }
                         });
                     }
+                } catch(e) {}
+                
+                // ローカルバックアップも更新
+                try {
+                    localStorage.setItem('games_backup', JSON.stringify(games));
                 } catch(e) {}
                 
                 isSaving = false;
@@ -1922,7 +1934,13 @@
                 const res = await fetch('./chat.json?t=' + Date.now());
                 if (res.ok) {
                     const newMessages = await res.json();
-                    if (JSON.stringify(newMessages) !== JSON.stringify(chatMessages)) {
+                    // 軽量な変更検知: メッセージ数 + 最新 timestamp
+                    const oldLatest = chatMessages.length > 0 ? (chatMessages[chatMessages.length - 1].timestamp || 0) : 0;
+                    const newLatest = newMessages.length > 0 ? (newMessages[newMessages.length - 1].timestamp || 0) : 0;
+                    const changed = newMessages.length !== chatMessages.length || newLatest !== oldLatest ||
+                        (newMessages.length > 0 && chatMessages.length > 0 &&
+                         JSON.stringify(newMessages.map(m => m.id + m.timestamp)) !== JSON.stringify(chatMessages.map(m => m.id + m.timestamp)));
+                    if (changed) {
                         // Remove notifications for deleted messages
                         document.querySelectorAll('.chat-notification').forEach(notif => {
                             if (notif.dataset.isShare === 'true') return;
@@ -2534,7 +2552,7 @@
                 game.lastPlayed = Date.now();
                 game.hasUpdate = false;
                 saveGamesToServer();
-                renderGames();
+                safeRenderGames();
             }
         }
 
@@ -3003,10 +3021,11 @@
                 reader.onload = function(e) {
                     try {
                         const imported = JSON.parse(e.target.result);
+                        let importedGames;
                         if (Array.isArray(imported)) {
-                            games = imported.map(g => ({ ...g, createdAt: g.createdAt || Date.now() }));
+                            importedGames = imported.map(g => ({ ...g, createdAt: g.createdAt || Date.now() }));
                         } else if (imported && typeof imported === 'object') {
-                            if (Array.isArray(imported.games)) games = imported.games;
+                            if (Array.isArray(imported.games)) importedGames = imported.games;
                             if (imported.serverConfig) {
                                 serverConfig = { ...DEFAULT_SERVER_CONFIG, ...imported.serverConfig };
                                 saveConfigToServer();
@@ -3021,6 +3040,28 @@
                         } else {
                             throw new Error("Invalid format");
                         }
+                        if (!importedGames) throw new Error("No games found");
+                        
+                        // ID 重複を検出し、重複する場合は Date.now() ベースで再割り当て
+                        const seenIds = new Set();
+                        let hasDup = false;
+                        importedGames.forEach(g => {
+                            if (seenIds.has(g.id)) hasDup = true;
+                            seenIds.add(g.id);
+                        });
+                        if (hasDup) {
+                            const usedIds = new Set();
+                            const base = Date.now();
+                            importedGames = importedGames.map((g, i) => {
+                                let newId = base + i;
+                                while (usedIds.has(newId)) newId++;
+                                usedIds.add(newId);
+                                return { ...g, id: newId };
+                            });
+                            showToast('ID重複を検出しました。再割り当てしました', 'warning');
+                        }
+                        
+                        games = importedGames;
                         applyConfig();
                         renderGames();
                         saveGamesToServer();
@@ -3436,7 +3477,13 @@
                 const res = await fetch('./share.json?t=' + Date.now());
                 if (res.ok) {
                     const newMessages = await res.json();
-                    if (JSON.stringify(newMessages) !== JSON.stringify(shareMessages)) {
+                    // 軽量な変更検知: メッセージ数 + 最新 timestamp
+                    const oldLatest = shareMessages.length > 0 ? (shareMessages[shareMessages.length - 1].timestamp || 0) : 0;
+                    const newLatest = newMessages.length > 0 ? (newMessages[newMessages.length - 1].timestamp || 0) : 0;
+                    const changed = newMessages.length !== shareMessages.length || newLatest !== oldLatest ||
+                        (newMessages.length > 0 && shareMessages.length > 0 &&
+                         JSON.stringify(newMessages.map(m => m.id + m.timestamp)) !== JSON.stringify(shareMessages.map(m => m.id + m.timestamp)));
+                    if (changed) {
                         // Remove notifications for deleted messages
                         document.querySelectorAll('.chat-notification').forEach(notif => {
                             if (notif.dataset.isShare !== 'true') return; // Skip chat notifications
@@ -3705,7 +3752,9 @@
         }
 
         function openShare() {
-            document.getElementById('share-name').value = document.getElementById('chat-name').value || localStorage.getItem('chat_name') || '';
+            let shareName = document.getElementById('chat-name').value || localStorage.getItem('chat_name') || '';
+            if (shareName === '名無しさん') shareName = '';
+            document.getElementById('share-name').value = shareName;
             
             const shareSelect = document.getElementById('share-game-select');
             let options = '<option value="">ゲーム指定なし</option>';
