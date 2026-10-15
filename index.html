@@ -2331,7 +2331,7 @@
             }
 
             const fragment = document.createDocumentFragment();
-            const readHistory = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
+            const readHistory = getReadHistory();
 
             filteredGames.forEach((game, index) => {
                 const card = document.createElement('div');
@@ -2475,7 +2475,6 @@
             fragment.appendChild(addCard);
 
             grid.appendChild(fragment);
-            renderFilters();
         }
 
         // --- Pin Function ---
@@ -2530,15 +2529,26 @@
             categoryDragStartIndex = null;
         }
 
+        let _readHistoryCache = null;
+        function getReadHistory() {
+            if (_readHistoryCache === null) {
+                _readHistoryCache = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
+            }
+            return _readHistoryCache;
+        }
+        function setReadHistoryEntry(gameId, ts) {
+            const h = getReadHistory();
+            h[gameId] = ts;
+            localStorage.setItem('gameReadHistory', JSON.stringify(h));
+        }
+
         // === プレイ時に順番を入れ替える（ピン留め以外） ===
         function launchGame(game) {
             if (!game.url) return;
             window.open(game.url, localConfig.openInNewTab ? '_blank' : '_self', 'noopener,noreferrer');
             
             // 個人の既読時刻を記録
-            const readHistory = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
-            readHistory[game.id] = Date.now();
-            localStorage.setItem('gameReadHistory', JSON.stringify(readHistory));
+            setReadHistoryEntry(game.id, Date.now());
 
             // プレイ回数をインクリメント
             game.playCount = (game.playCount || 0) + 1;
@@ -2878,6 +2888,7 @@
             }
 
             renderGames();
+            renderFilters();
             closeGameModal();
             saveGamesToServer();
         }
@@ -2887,6 +2898,7 @@
             if (game) {
                 games = games.filter(g => g.id !== id);
                 renderGames();
+                renderFilters();
                 closeGameModal();
                 saveGamesToServer();
                 showToast('ゲームを削除しました', 'success');
@@ -2931,11 +2943,13 @@
             if (isUpdated) {
                 saveGamesToServer(); 
                 renderGames();       
+                renderFilters();
             }
 
             if (currentCategory === cat) {
                 currentCategory = 'all';
                 renderGames();
+                renderFilters();
             }
 
             renderSettingsCategories(); 
@@ -3350,29 +3364,38 @@
             els.settingsModal = document.getElementById('settings-modal');
             els.searchInput = document.getElementById('search-input');
 
-            try {
-                const res = await fetch('./config.json?t=' + Date.now());
-                if (res.ok) {
-                    const loadedConfig = await res.json();
+            // Load config, games, stamps in parallel for faster initial load
+            const [configRes, gamesRes, stampsRes] = await Promise.allSettled([
+                fetch('./config.json?t=' + Date.now()),
+                fetch('./games.json?t=' + Date.now()),
+                fetch('./post_stamps.php')
+            ]);
+
+            // Process config
+            if (configRes.status === 'fulfilled' && configRes.value.ok) {
+                try {
+                    const loadedConfig = await configRes.value.json();
                     serverConfig = { ...DEFAULT_SERVER_CONFIG, ...loadedConfig };
+                } catch (e) {
+                    console.warn('Config parse failed');
                 }
-            } catch (e) {
+            } else {
                 console.warn('Config load failed, using defaults');
                 const localBackup = localStorage.getItem('config_backup');
                 if (localBackup) serverConfig = { ...DEFAULT_SERVER_CONFIG, ...JSON.parse(localBackup) };
             }
-            applyConfig();
 
-            // Load Games
-            try {
-                const res = await fetch('./games.json?t=' + Date.now());
-                if (res.ok) {
-                    const loaded = await res.json();
+            // Process games
+            if (gamesRes.status === 'fulfilled' && gamesRes.value.ok) {
+                try {
+                    const loaded = await gamesRes.value.json();
                     if (Array.isArray(loaded)) {
                         games = loaded;
                     }
+                } catch (e) {
+                    console.warn('Games parse failed');
                 }
-            } catch (e) {
+            } else {
                 console.warn('Games load failed');
                 const localGames = localStorage.getItem('games_backup');
                 if (localGames) {
@@ -3380,11 +3403,25 @@
                     showToast('サーバーから読み込めなかったため、ローカルバックアップを復元しました', 'warning');
                 }
             }
-            
-            // Load Stamps (separate try to avoid affecting games fallback)
-            await fetchStamps();
+
+            // Process stamps
+            if (stampsRes.status === 'fulfilled' && stampsRes.value.ok) {
+                try {
+                    const data = await stampsRes.value.json();
+                    if (Array.isArray(data)) {
+                        customStamps = data;
+                    }
+                } catch (e) {
+                    console.warn('Stamps parse failed');
+                }
+            }
+
+            applyConfig();
+            renderReactionPicker();
+            renderSettingsStamps();
 
             renderGames();
+            renderFilters();
             restoreActiveNotifications();
 
             // Auto Recovery Logic
@@ -3482,7 +3519,7 @@
                         serverTimestamps = ts;
                     }
                 } catch(e) {}
-            }, 3000);
+            }, 5000);
 
             // 1分ごとに表示を更新して「何分前アクティブ」の時間を最新に保つ
             setInterval(() => {
@@ -3492,9 +3529,9 @@
 
             // Chat polling (start after games are loaded)
             fetchChat();
-            setInterval(fetchChat, 3000);
+            setInterval(fetchChat, 5000);
             fetchShare();
-            setInterval(fetchShare, 3000);
+            setInterval(fetchShare, 5000);
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) {
                     fetchChat();
@@ -3516,6 +3553,7 @@
         function toggleRanking() {
             isRankingActive = !isRankingActive;
             renderGames();
+            renderFilters();
         }
 
         async function fetchShare() {
