@@ -1669,7 +1669,7 @@
             
             let gameHtml = '';
             if (msg.gameId) {
-                const game = games.find(g => g.id == msg.gameId);
+                const game = games.find(g => String(g.id) === String(msg.gameId));
                 if (game) {
                     gameHtml = `<div class="chat-notification-game">🎮 ${escapeHtml(game.name)}</div>`;
                 }
@@ -2009,9 +2009,9 @@
                 const name = msg.name || '名無しさん';
                 let gameHtml = '';
                 if (msg.gameId) {
-                    const game = games.find(g => g.id == msg.gameId);
+                    const game = games.find(g => String(g.id) === String(msg.gameId));
                     if (game) {
-                        gameHtml = `<div class="chat-message-game" onclick="App.openChatGame(${game.id})">🎮 ${escapeHtml(game.name)}</div>`;
+                        gameHtml = `<div class="chat-message-game" onclick="App.openChatGame(${JSON.stringify(game.id)})">🎮 ${escapeHtml(game.name)}</div>`;
                     }
                 }
                 
@@ -2188,7 +2188,8 @@
         }
 
         function openChatGame(id) {
-            const game = games.find(g => g.id == id);
+            if (id === undefined || id === null) return;
+            const game = games.find(g => String(g.id) === String(id));
             if (game) {
                 launchGame(game);
             }
@@ -2625,6 +2626,8 @@
             card.style.borderColor = '';
 
             if (dragStartIndex === null || dragStartIndex === dropIndex) return;
+            if (dragStartIndex < 0 || dragStartIndex >= filteredGames.length) return;
+            if (dropIndex < 0 || dropIndex >= filteredGames.length) return;
 
             // フィルター適用後のリストを元に、元の games 配列を操作
             const movedId = filteredGames[dragStartIndex].id;
@@ -3585,9 +3588,9 @@
                 const name = msg.name || '名無しさん';
                 let gameHtml = '';
                 if (msg.gameId) {
-                    const game = games.find(g => g.id == msg.gameId);
+                    const game = games.find(g => String(g.id) === String(msg.gameId));
                     if (game) {
-                        gameHtml = `<div class="chat-message-game" onclick="App.openChatGame(${game.id})">🎮 ${escapeHtml(game.name)}</div>`;
+                        gameHtml = `<div class="chat-message-game" onclick="App.openChatGame(${JSON.stringify(game.id)})">🎮 ${escapeHtml(game.name)}</div>`;
                     }
                 }
                 
