@@ -1498,8 +1498,10 @@
 
         function renderReactionPicker() {
             const picker = document.getElementById('reaction-picker');
+            if (!picker) return;
             const allStamps = [...defaultStamps, ...customStamps];
             picker.innerHTML = allStamps.map(s => {
+                if (typeof s !== 'string') return '';
                 // 画像スタンプはテキスト表示（onclickに含められない）
                 const display = s.startsWith('uploads/') || s.startsWith('http://') || s.startsWith('https://')
                     ? '🖼️' : escapeHtml(s);
@@ -1522,6 +1524,7 @@
         }
 
                 function renderStampContent(s) {
+            if (typeof s !== 'string') return '';
             if (s.startsWith('uploads/') || s.startsWith('http://') || s.startsWith('https://')) {
                 return `<img src="${escapeHtml(s)}" style="max-height: 24px; max-width: 24px; vertical-align: middle; border-radius: 4px;" alt="stamp">`;
             }
@@ -2069,8 +2072,10 @@
                         
                         <div style="display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap;">
                             ${Object.keys(msg.reactions || {}).map(emoji => {
-                                const count = msg.reactions[emoji].length;
-                                const reacted = msg.reactions[emoji].includes(myClientId);
+                                const clients = msg.reactions[emoji] || [];
+                                if (!Array.isArray(clients)) return '';
+                                const count = clients.length;
+                                const reacted = clients.includes(myClientId);
                                 if (count === 0) return '';
                                 return `<button class="reaction-btn ${reacted ? 'reacted' : ''}" onclick="App.reactMessage('${emoji}', ${msg.timestamp}, false)">${App.renderStampContent(emoji)} <span>${count}</span></button>`;
                             }).join('')}
@@ -2410,20 +2415,9 @@
                 let activeBadge = '';
                 if (isRankingActive) { const plays = game.playCount || 0; activeBadge = `<span class="active-badge" style="background: rgba(0, 0, 0, 0.8); color: #ffd700; border: 1px solid #ff4757; padding: 4px 8px; font-size: 12px; letter-spacing: 0.5px;">👑 ${plays}</span>`; } else if (lastPlayed > 0 && diffMs < 3600000) {
                     const diffMins = Math.floor(diffMs / 60000);
-                    
-                    // ユニークユーザー数のカウント（過去1時間以内）
-                    let activeUserCount = 0;
-                    if (game.activeUsers) {
-                        const oneHourAgo = now - 3600000;
-                        activeUserCount = Object.values(game.activeUsers).filter(ts => ts > oneHourAgo).length;
-                    }
-                    // もしアクティブユーザーがいない（データ不整合など）場合は最低1人とする
-                    if (activeUserCount === 0) activeUserCount = 1;
-
                     activeBadge = `
                         <span class="active-badge">
-                            ${diffMins}分前アクティブ<br>
-                            <span style="font-size: 9px; opacity: 0.8;">(${activeUserCount}人)</span>
+                            ${diffMins}分前アクティブ
                         </span>`;
                 }
 
@@ -2559,14 +2553,26 @@
         let _readHistoryCache = null;
         function getReadHistory() {
             if (_readHistoryCache === null) {
-                _readHistoryCache = JSON.parse(localStorage.getItem('gameReadHistory')) || {};
+                let parsed;
+                try { parsed = JSON.parse(localStorage.getItem('gameReadHistory')); } catch(e) { parsed = null; }
+                _readHistoryCache = (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
             }
             return _readHistoryCache;
         }
         function setReadHistoryEntry(gameId, ts) {
             const h = getReadHistory();
             h[gameId] = ts;
-            localStorage.setItem('gameReadHistory', JSON.stringify(h));
+            try {
+                localStorage.setItem('gameReadHistory', JSON.stringify(h));
+            } catch(e) {
+                // クォータ超過時は最古のエントリを削ってリトライ
+                const keys = Object.keys(h);
+                keys.sort((a, b) => h[a] - h[b]);
+                for (let i = 0; i < Math.max(1, Math.floor(keys.length / 4)); i++) {
+                    delete h[keys[i]];
+                }
+                try { localStorage.setItem('gameReadHistory', JSON.stringify(h)); } catch(e2) {}
+            }
         }
 
         // === プレイ時に順番を入れ替える（ピン留め以外） ===
@@ -3416,7 +3422,14 @@
             } else {
                 console.warn('Config load failed, using defaults');
                 const localBackup = localStorage.getItem('config_backup');
-                if (localBackup) serverConfig = { ...DEFAULT_SERVER_CONFIG, ...JSON.parse(localBackup) };
+                if (localBackup) {
+                    try {
+                        const parsed = JSON.parse(localBackup);
+                        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                            serverConfig = { ...DEFAULT_SERVER_CONFIG, ...parsed };
+                        }
+                    } catch(e) {}
+                }
             }
 
             // Process games
@@ -3433,8 +3446,13 @@
                 console.warn('Games load failed');
                 const localGames = localStorage.getItem('games_backup');
                 if (localGames) {
-                    games = JSON.parse(localGames);
-                    showToast('サーバーから読み込めなかったため、ローカルバックアップを復元しました', 'warning');
+                    try {
+                        const parsed = JSON.parse(localGames);
+                        if (Array.isArray(parsed)) {
+                            games = parsed;
+                            showToast('サーバーから読み込めなかったため、ローカルバックアップを復元しました', 'warning');
+                        }
+                    } catch(e) {}
                 }
             }
 
@@ -3462,7 +3480,9 @@
             const localGamesStr = localStorage.getItem('games_backup');
             if (localGamesStr) {
                 try {
-                    const localGames = JSON.parse(localGamesStr);
+                    const parsedBackup = JSON.parse(localGamesStr);
+                    const localGames = Array.isArray(parsedBackup) ? parsedBackup : null;
+                    if (!localGames) return;
                     let localPlayCount = 0;
                     localGames.forEach(g => localPlayCount += (g.playCount || 0));
                     let serverPlayCount = 0;
@@ -3705,8 +3725,10 @@
                         
                         <div style="display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap;">
                             ${Object.keys(msg.reactions || {}).map(emoji => {
-                                const count = msg.reactions[emoji].length;
-                                const reacted = msg.reactions[emoji].includes(myClientId);
+                                const clients = msg.reactions[emoji] || [];
+                                if (!Array.isArray(clients)) return '';
+                                const count = clients.length;
+                                const reacted = clients.includes(myClientId);
                                 if (count === 0) return '';
                                 return `<button class="reaction-btn ${reacted ? 'reacted' : ''}" onclick="App.reactMessage('${emoji}', ${msg.timestamp}, true)">${App.renderStampContent(emoji)} <span>${count}</span></button>`;
                             }).join('')}
