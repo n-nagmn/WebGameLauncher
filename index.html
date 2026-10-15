@@ -1855,6 +1855,26 @@
             return dataUrl;
         }
 
+        // --- Image Cache (pre-decode via Image objects) ---
+        const _imageCache = {};
+        const _imageCacheOrder = [];
+        const _imageCacheMax = 100;
+        function getCachedImage(url) {
+            if (!url) return null;
+            if (_imageCache[url]) return _imageCache[url];
+            const img = new Image();
+            img.src = url;
+            img.onload = () => img.classList.add('loaded');
+            // LRU eviction
+            if (_imageCacheOrder.length >= _imageCacheMax) {
+                const oldest = _imageCacheOrder.shift();
+                delete _imageCache[oldest];
+            }
+            _imageCache[url] = img;
+            _imageCacheOrder.push(url);
+            return img;
+        }
+
         // --- Server Communication ---
 
         async function saveGamesToServer() {
@@ -2449,9 +2469,19 @@
                 `;
                 const img = card.querySelector('img');
                 if (img) {
-                    img.src = imgUrl;
-                    img.onload = () => img.classList.add('loaded');
-                    img.onerror = () => { img.src = generatePlaceholderImage(game.name); };
+                    const cached = getCachedImage(imgUrl);
+                    if (cached && cached.complete && cached.naturalWidth > 0) {
+                        // Already decoded in cache — reuse source, show immediately
+                        img.src = cached.src;
+                        img.classList.add('loaded');
+                    } else {
+                        img.src = imgUrl;
+                        img.onload = () => img.classList.add('loaded');
+                    }
+                    img.onerror = () => {
+                        const ph = generatePlaceholderImage(game.name);
+                        if (img.src !== ph) img.src = ph;
+                    };
                 }
                 fragment.appendChild(card);
             });
