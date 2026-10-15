@@ -1484,11 +1484,14 @@
 
         async function fetchStamps() {
             try {
-                const res = await fetch('post_stamps.php');
+                const res = await fetch('./post_stamps.php');
                 if (res.ok) {
-                    customStamps = await res.json();
-                    renderReactionPicker();
-                    renderSettingsStamps();
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        customStamps = data;
+                        renderReactionPicker();
+                        renderSettingsStamps();
+                    }
                 }
             } catch(e) { console.error(e); }
         }
@@ -1496,9 +1499,15 @@
         function renderReactionPicker() {
             const picker = document.getElementById('reaction-picker');
             const allStamps = [...defaultStamps, ...customStamps];
-            picker.innerHTML = allStamps.map(s => `
-                <button class="picker-emoji" onclick="App.reactMessage('${escapeHtml(s)}')" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;transition:transform 0.2s; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${App.renderStampContent(s)}</button>
-            `).join('');
+            picker.innerHTML = allStamps.map(s => {
+                // 画像スタンプはテキスト表示（onclickに含められない）
+                const display = s.startsWith('uploads/') || s.startsWith('http://') || s.startsWith('https://')
+                    ? '🖼️' : escapeHtml(s);
+                const safeStamp = escapeHtml(s).replace(/'/g, "\\'");
+                return `
+                <button class="picker-emoji" onclick="App.reactMessage('${safeStamp}')" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;transition:transform 0.2s; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${display}</button>
+            `;
+            }).join('');
         }
 
         function renderSettingsStamps() {
@@ -1553,6 +1562,10 @@
             const input = document.getElementById('new-stamp-input');
             const val = input.value.trim();
             if(!val) return;
+            if (val.length > 10) {
+                showToast('スタンプ名は10文字までです', 'error');
+                return;
+            }
             if(defaultStamps.includes(val) || customStamps.includes(val)) {
                 showToast('既に存在するスタンプです', 'error');
                 return;
@@ -1569,7 +1582,7 @@
 
         async function saveCustomStamps() {
             try {
-                const res = await fetch('post_stamps.php', {
+                const res = await fetch('./post_stamps.php', {
                     method: 'POST',
                     body: JSON.stringify(customStamps)
                 });
@@ -1869,18 +1882,19 @@
                 try {
                     const latestRes = await fetch('./games.json?t=' + Date.now());
                     if (latestRes.ok) {
-                        const serverGames = await latestRes.json();
-                        games.forEach(g => {
-                            const serverGame = serverGames.find(sg => sg.id === g.id);
-                            if (serverGame) {
-                                const localCount = localPlayCounts[g.id] || 0;
-                                const serverCount = serverGame.playCount || 0;
-                                // サーバーがローカルより大きい場合のみ採用（自分の増加分を含む）
-                                if (serverCount > localCount) {
-                                    g.playCount = serverCount;
+                        const latest = await latestRes.json();
+                        if (Array.isArray(latest)) {
+                            games.forEach(g => {
+                                const serverGame = latest.find(sg => sg.id === g.id);
+                                if (serverGame) {
+                                    const localCount = localPlayCounts[g.id] || 0;
+                                    const serverCount = serverGame.playCount || 0;
+                                    if (serverCount > localCount) {
+                                        g.playCount = serverCount;
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
                 } catch(e) {}
                 
@@ -3353,7 +3367,10 @@
             try {
                 const res = await fetch('./games.json?t=' + Date.now());
                 if (res.ok) {
-                    games = await res.json();
+                    const loaded = await res.json();
+                    if (Array.isArray(loaded)) {
+                        games = loaded;
+                    }
                 }
             } catch (e) {
                 console.warn('Games load failed');
@@ -3453,7 +3470,7 @@
                             let shouldRender = false;
                             if (ts.games !== serverTimestamps.games) {
                                 const gRes = await fetch('./games.json?t=' + Date.now());
-                                if (gRes.ok) { games = await gRes.json(); shouldRender = true; }
+                                if (gRes.ok) { const loaded = await gRes.json(); if (Array.isArray(loaded)) { games = loaded; shouldRender = true; } }
                             }
                             if (ts.config !== serverTimestamps.config) {
                                 const cRes = await fetch('./config.json?t=' + Date.now());
@@ -3948,7 +3965,7 @@
             }
             
             try {
-                const response = await fetch('post_share.php', {
+                const response = await fetch('./post_share.php', {
                     method: 'POST',
                     body: formData
                 });
