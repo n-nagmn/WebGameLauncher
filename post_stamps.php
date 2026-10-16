@@ -52,10 +52,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $json_data = file_get_contents('php://input');
     $decoded = json_decode($json_data, true);
 
-    if ($decoded !== null) {
-        $stamps = array_values($decoded);
-        $encoded = json_encode($stamps, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-        
+    if ($decoded !== null && is_array($decoded)) {
+        $stamps = [];
+        foreach ($decoded as $s) {
+            if (is_string($s) && $s !== '') {
+                // Stamps are embedded in onclick attributes client-side; reject
+                // quotes, angle brackets, parens, backslashes, control chars,
+                // and overly long values. Image stamps (uploads/ or URLs) and
+                // short emoji/text are allowed.
+                if (mb_strlen($s, 'UTF-8') > 64) continue;
+                if (preg_match('/[\'"<>\\\\]/u', $s)) continue;
+                if (preg_match('/[\x00-\x1f]/', $s)) continue;
+                $stamps[] = $s;
+            }
+        }
+        $encoded = json_encode(array_values($stamps), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+
         $lock_file = $stamps_file . '.lock';
         $lock_fp = fopen($lock_file, 'w');
         if (flock($lock_fp, LOCK_EX)) {
@@ -64,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flock($lock_fp, LOCK_UN);
         }
         fclose($lock_fp);
-        
+
         echo json_encode(['status' => 'success']);
     } else {
         http_response_code(400);

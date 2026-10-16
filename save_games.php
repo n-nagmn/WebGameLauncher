@@ -125,7 +125,7 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         }
 
         foreach ($required_fields as $field) {
-            if (!isset($game[$field]) || (is_string($game[$field]) && trim($game[$field]) === '')) {
+            if (!isset($game[$field]) || (is_scalar($game[$field]) && trim((string)$game[$field]) === '')) {
                 $response["message"] = "インデックス {$index} の {$field} が不正です";
                 echo json_encode($response, JSON_UNESCAPED_UNICODE);
                 flock($fp_lock, LOCK_UN);
@@ -135,7 +135,21 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         }
 
         $game_id = is_int($game['id']) ? $game['id'] : intval($game['id']);
-        
+
+        // URL sanity check: reject non-URL schemes such as javascript:/data:/vbscript:/file:
+        // (FILTER_VALIDATE_URL allows "javascript:alert(1)" which has no "://")
+        $raw_url = is_string($game['url']) ? trim($game['url']) : '';
+        if (preg_match('/^[a-z][a-z0-9+.-]*:/i', $raw_url)) {
+            $scheme = strtolower((string)preg_replace('/^([a-z][a-z0-9+.-]*):.*$/i', '$1', $raw_url));
+            if (in_array($scheme, ['javascript', 'data', 'vbscript', 'file'], true)) {
+                $response["message"] = "インデックス {$index} の url が許可されていないスキームです";
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                flock($fp_lock, LOCK_UN);
+                fclose($fp_lock);
+                exit;
+            }
+        }
+
         // 既存のサーバー側データを取得
         $server_game = isset($existing_active_map[$game_id]) ? null : null; // マップからはactiveUsersしか取れないので再検索
         foreach ($existing_games as $ex_g) {
@@ -181,10 +195,10 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
 
         $validated[] = [
             'id' => $game_id,
-            'name' => $is_outdated ? $server_game['name'] : htmlspecialchars(mb_substr(trim($game['name']), 0, 100), ENT_QUOTES, 'UTF-8'),
-            'url' => $is_outdated ? $server_game['url'] : (filter_var(trim($game['url']), FILTER_VALIDATE_URL) ?: ''),
-            'image' => $is_outdated ? $server_game['image'] : (isset($game['image']) ? htmlspecialchars(trim($game['image']), ENT_QUOTES, 'UTF-8') : ''),    
-            'category' => $is_outdated ? $server_game['category'] : (isset($game['category']) ? htmlspecialchars(mb_substr(trim($game['category']), 0, 50), ENT_QUOTES, 'UTF-8') : ''),
+            'name' => $is_outdated ? $server_game['name'] : mb_substr(trim((string)($game['name'] ?? '')), 0, 100, 'UTF-8'),
+            'url' => $is_outdated ? $server_game['url'] : (filter_var(trim((string)($game['url'] ?? '')), FILTER_VALIDATE_URL) ?: ''),
+            'image' => $is_outdated ? $server_game['image'] : (isset($game['image']) ? trim((string)$game['image']) : ''),
+            'category' => $is_outdated ? $server_game['category'] : (isset($game['category']) ? mb_substr(trim((string)$game['category']), 0, 50, 'UTF-8') : ''),
             'playersMin' => $is_outdated ? $server_game['playersMin'] : (isset($game['playersMin']) ? max(0, intval($game['playersMin'])) : 0),
             'playersMax' => $is_outdated ? $server_game['playersMax'] : (isset($game['playersMax']) ? max(0, intval($game['playersMax'])) : 0),
             'createdAt' => $is_outdated ? $server_game['createdAt'] : (isset($game['createdAt']) ? intval($game['createdAt']) : time() * 1000),
@@ -192,11 +206,11 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
             'lastPlayed' => $merged_last_played,
             'hasUpdate' => $is_outdated ? $server_game['hasUpdate'] : (isset($game['hasUpdate']) ? filter_var($game['hasUpdate'], FILTER_VALIDATE_BOOLEAN) : false),
             'remoteUpdatedAt' => $is_outdated ? $server_game['remoteUpdatedAt'] : (isset($game['remoteUpdatedAt']) ? intval($game['remoteUpdatedAt']) : 0),
-            'lastHash' => $is_outdated ? $server_game['lastHash'] : (isset($game['lastHash']) ? htmlspecialchars(trim($game['lastHash']), ENT_QUOTES, 'UTF-8') : ''),
+            'lastHash' => $is_outdated ? $server_game['lastHash'] : (isset($game['lastHash']) ? trim((string)$game['lastHash']) : ''),
             'isPinned' => $is_outdated ? $server_game['isPinned'] : (isset($game['isPinned']) ? filter_var($game['isPinned'], FILTER_VALIDATE_BOOLEAN) : false),
             'playCount' => $merged_play_count,
             'activeUsers' => $merged_active,
-            'creator' => $is_outdated ? ($server_game['creator'] ?? '') : (isset($game['creator']) ? htmlspecialchars(mb_substr(trim($game['creator']), 0, 10), ENT_QUOTES, 'UTF-8') : '')
+            'creator' => $is_outdated ? ($server_game['creator'] ?? '') : (isset($game['creator']) ? mb_substr(trim((string)$game['creator']), 0, 10, 'UTF-8') : '')
         ];
     }
 
@@ -213,7 +227,15 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         exit;
     }
 
-    $result = @file_put_contents($file_path, $json_output);
+    // Atomic write: temp file + rename
+    $tmp_path = $file_path . '.tmp';
+    $result = @file_put_contents($tmp_path, $json_output, LOCK_EX);
+    if ($result !== false) {
+        if (!@rename($tmp_path, $file_path)) {
+            @unlink($tmp_path);
+            $result = false;
+        }
+    }
     if ($result !== false) {
         @chmod($file_path, 0666);
         
