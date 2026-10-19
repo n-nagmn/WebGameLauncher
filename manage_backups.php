@@ -19,14 +19,18 @@ if (!is_dir($backup_dir)) {
     @chmod($backup_dir, 0777);
 }
 
+// Strict pattern for server-side backup filenames (created via the create action)
+$backup_filename_regex = '/^backup_\d{8}_\d{6}_[0-9a-f]+\.zip$/';
+
 $games_file = __DIR__ . '/games.json';
 $share_file = __DIR__ . '/share.json';
 $chat_file = __DIR__ . '/chat.json';
 $stamps_file = __DIR__ . '/stamps.json';
+$config_file = __DIR__ . '/config.json';
 $uploads_dir = __DIR__ . '/uploads';
 
 // Files that may be stored at the archive root
-$root_json_files = ['games.json', 'share.json', 'chat.json', 'stamps.json'];
+$root_json_files = ['games.json', 'share.json', 'chat.json', 'stamps.json', 'config.json'];
 
 // Regex for allowed upload file basenames (inside uploads/ in the archive)
 $upload_file_regex = '/^(stamp_|img_)[A-Za-z0-9_-]+\.(png|jpe?g|gif|webp)$/i';
@@ -71,12 +75,25 @@ function createBackupZip($backup_name, $files, $uploads_dir) {
  * Extract a backup zip into $dest. Returns [ok, error_message].
  * Members are strictly whitelisted; anything else is rejected.
  */
-function extractBackupZip($zip_path, $dest, $root_json_files) {
+function extractBackupZip($zip_path, $dest, $root_json_files, $lock_file = null) {
     if (!class_exists('ZipArchive')) {
         return [false, 'ZipArchive拡張機能が利用できません'];
     }
+
+    // Acquire an exclusive lock on the shared restore lock file (same pattern
+    // as save_games.php) so a zip restore never races with a game save.
+    $fp_lock = null;
+    if ($lock_file !== null) {
+        $fp_lock = @fopen($lock_file, 'w');
+        if ($fp_lock !== false && !flock($fp_lock, LOCK_EX)) {
+            fclose($fp_lock);
+            return [false, 'サーバーが混雑しています。もう一度お試しください。'];
+        }
+    }
+
     $zip = new ZipArchive();
     if ($zip->open($zip_path) !== true) {
+        if ($fp_lock !== null) { flock($fp_lock, LOCK_UN); fclose($fp_lock); }
         return [false, 'ZIPファイルを開けません'];
     }
 
@@ -89,11 +106,13 @@ function extractBackupZip($zip_path, $dest, $root_json_files) {
         if ($normalized === '' || $normalized === '.') continue;
         if ($normalized[0] === '/' || preg_match('/^[a-z]:/i', $normalized)) {
             $zip->close();
+            if ($fp_lock !== null) { flock($fp_lock, LOCK_UN); fclose($fp_lock); }
             return [false, '不正なファイルパスが含まれています: ' . $name];
         }
         $parts = explode('/', $normalized);
         if (in_array('..', $parts, true)) {
             $zip->close();
+            if ($fp_lock !== null) { flock($fp_lock, LOCK_UN); fclose($fp_lock); }
             return [false, '不正なファイルパスが含まれています: ' . $name];
         }
 
@@ -110,16 +129,16 @@ function extractBackupZip($zip_path, $dest, $root_json_files) {
         }
         if ($target_path === null) {
             $zip->close();
+            if ($fp_lock !== null) { flock($fp_lock, LOCK_UN); fclose($fp_lock); }
             return [false, '許可されていないファイルが含まれています: ' . $name];
         }
         $members[] = ['name' => $name, 'target' => $target_path];
     }
 
-    // Extract (all members already validated)
+    // Extract (all members already validated).
+    // Each member is written atomically: temp file + rename, so a failed
+    // restore never leaves a half-written JSON file behind.
     foreach ($members as $m) {
-        if (file_exists($m['target'])) {
-            @unlink($m['target']);
-        }
         $dir = dirname($m['target']);
         if (!is_dir($dir)) {
             @mkdir($dir, 0777, true);
@@ -128,15 +147,25 @@ function extractBackupZip($zip_path, $dest, $root_json_files) {
         $src = $zip->getFromName($m['name']);
         if ($src === false) {
             $zip->close();
+            if ($fp_lock !== null) { flock($fp_lock, LOCK_UN); fclose($fp_lock); }
             return [false, 'ZIPメンバーの読み込みに失敗しました: ' . $m['name']];
         }
-        if (@file_put_contents($m['target'], $src) === false) {
+        $tmp = $m['target'] . '.tmp';
+        if (@file_put_contents($tmp, $src, LOCK_EX) === false) {
             $zip->close();
+            if ($fp_lock !== null) { flock($fp_lock, LOCK_UN); fclose($fp_lock); }
+            return [false, 'ファイルの書き込みに失敗しました: ' . $m['target']];
+        }
+        if (!@rename($tmp, $m['target'])) {
+            @unlink($tmp);
+            $zip->close();
+            if ($fp_lock !== null) { flock($fp_lock, LOCK_UN); fclose($fp_lock); }
             return [false, 'ファイルの書き込みに失敗しました: ' . $m['target']];
         }
         @chmod($m['target'], 0666);
     }
     $zip->close();
+    if ($fp_lock !== null) { flock($fp_lock, LOCK_UN); fclose($fp_lock); }
     return [true, ''];
 }
 
@@ -195,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'download') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'export') {
     $backup_name = $backup_dir . '/export_' . date('Ymd_His') . '_' . uniqid() . '.zip';
-    $files = [$games_file, $share_file, $chat_file, $stamps_file];
+    $files = [$games_file, $share_file, $chat_file, $stamps_file, $config_file];
     if (createBackupZip($backup_name, $files, $uploads_dir)) {
         header('Content-Type: application/zip');
         header('Content-Disposition: attachment; filename="backup.zip"');
@@ -235,7 +264,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'create') {
         $backup_name = $backup_dir . '/backup_' . date('Ymd_His') . '_' . uniqid() . '.zip';
-        $files = [$games_file, $share_file, $chat_file, $stamps_file];
+        $files = [$games_file, $share_file, $chat_file, $stamps_file, $config_file];
         if (createBackupZip($backup_name, $files, $uploads_dir)) {
             @chmod($backup_name, 0666);
             $response["status"] = "success";
@@ -258,16 +287,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $tmp_name = $_FILES['file']['tmp_name'];
         $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
+        $lock_file = __DIR__ . '/games.lock';
 
         if ($ext === 'zip') {
             $dest = __DIR__;
-            list($ok, $err) = extractBackupZip($tmp_name, $dest, $root_json_files);
+            list($ok, $err) = extractBackupZip($tmp_name, $dest, $root_json_files, $lock_file);
 
             if ($ok) {
                 @chmod($games_file, 0666);
                 @chmod($share_file, 0666);
                 @chmod($chat_file, 0666);
                 @chmod($stamps_file, 0666);
+                @chmod($config_file, 0666);
                 $response["status"] = "success";
                 $response["message"] = "アップロードされたZIPから復元しました";
                 echo json_encode($response, JSON_UNESCAPED_UNICODE);
@@ -297,6 +328,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode($response, JSON_UNESCAPED_UNICODE);
             exit;
         }
+        // Strict filename validation: only server-side backup zips (backup_YYYYMMDD_HHMMSS_<hex>.zip)
+        if (!preg_match($backup_filename_regex, $filename)) {
+            $response["message"] = "ファイル名が不正です（backup_YYYYMMDD_HHMMSS_<hex>.zip の形式のみ許可）";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
         $target_backup = $backup_dir . '/' . $filename;
         if (!file_exists($target_backup)) {
             $response["message"] = "バックアップファイルが見つかりません";
@@ -304,33 +341,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if (pathinfo($target_backup, PATHINFO_EXTENSION) === 'zip') {
-            $dest = __DIR__;
-            list($ok, $err) = extractBackupZip($target_backup, $dest, $root_json_files);
+        // Zip restore (the strict regex above guarantees this is a .zip file)
+        $lock_file = __DIR__ . '/games.lock';
+        list($ok, $err) = extractBackupZip($target_backup, __DIR__, $root_json_files, $lock_file);
 
-            if ($ok) {
-                @chmod($games_file, 0666);
-                @chmod($share_file, 0666);
-                @chmod($chat_file, 0666);
-                @chmod($stamps_file, 0666);
-                $response["status"] = "success";
-                $response["message"] = "ZIPバックアップから復元しました";
-                echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            } else {
-                $response["message"] = "ZIPファイルの展開に失敗しました: " . $err;
-                echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            }
+        if ($ok) {
+            @chmod($games_file, 0666);
+            @chmod($share_file, 0666);
+            @chmod($chat_file, 0666);
+            @chmod($stamps_file, 0666);
+            @chmod($config_file, 0666);
+            $response["status"] = "success";
+            $response["message"] = "ZIPバックアップから復元しました";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
         } else {
-            $backup_content = @file_get_contents($target_backup);
-            if (restoreJsonBackup($backup_content, $games_file)) {
-                @chmod($games_file, 0666);
-                $response["status"] = "success";
-                $response["message"] = "JSONバックアップから復元しました";
-                echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            } else {
-                $response["message"] = "復元に失敗しました。有効なJSONファイル（ゲームデータ配列）である必要があります。";
-                echo json_encode($response, JSON_UNESCAPED_UNICODE);
-            }
+            $response["message"] = "ZIPファイルの展開に失敗しました: " . $err;
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
         }
         exit;
     }
@@ -339,6 +365,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $filename = $decoded['filename'] ?? '';
         if (empty($filename) || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
             $response["message"] = "不正なファイル名です";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        // Strict filename validation: only server-side backup zips may be deleted
+        if (!preg_match($backup_filename_regex, $filename)) {
+            $response["message"] = "ファイル名が不正です（backup_YYYYMMDD_HHMMSS_<hex>.zip の形式のみ許可）";
             echo json_encode($response, JSON_UNESCAPED_UNICODE);
             exit;
         }

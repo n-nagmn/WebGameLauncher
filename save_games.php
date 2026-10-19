@@ -115,6 +115,7 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
     // Validate each game entry
     $required_fields = ['id', 'name', 'url'];
     $validated = [];
+    $seen_ids = []; // duplicate id detection
     foreach ($decoded as $index => $game) {
         if (!is_array($game)) {
             $response["message"] = "インデックス {$index} のデータが不正です";
@@ -136,6 +137,16 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
 
         $game_id = is_int($game['id']) ? $game['id'] : intval($game['id']);
 
+        // Duplicate id detection: reject the entire payload if an id appears twice
+        if (isset($seen_ids[$game_id])) {
+            $response["message"] = "重複するゲームIDが検出されました（ID: {$game_id}）。保存を拒否しました。";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            flock($fp_lock, LOCK_UN);
+            fclose($fp_lock);
+            exit;
+        }
+        $seen_ids[$game_id] = true;
+
         // URL sanity check: reject non-URL schemes such as javascript:/data:/vbscript:/file:
         // (FILTER_VALIDATE_URL allows "javascript:alert(1)" which has no "://")
         $raw_url = is_string($game['url']) ? trim($game['url']) : '';
@@ -143,6 +154,19 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
             $scheme = strtolower((string)preg_replace('/^([a-z][a-z0-9+.-]*):.*$/i', '$1', $raw_url));
             if (in_array($scheme, ['javascript', 'data', 'vbscript', 'file'], true)) {
                 $response["message"] = "インデックス {$index} の url が許可されていないスキームです";
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                flock($fp_lock, LOCK_UN);
+                fclose($fp_lock);
+                exit;
+            }
+        }
+
+        // Image sanity check: same scheme rejection as url (javascript:/data:/vbscript:/file:)
+        $raw_image = isset($game['image']) ? trim((string)$game['image']) : '';
+        if ($raw_image !== '' && preg_match('/^[a-z][a-z0-9+.-]*:/i', $raw_image)) {
+            $img_scheme = strtolower((string)preg_replace('/^([a-z][a-z0-9+.-]*):.*$/i', '$1', $raw_image));
+            if (in_array($img_scheme, ['javascript', 'data', 'vbscript', 'file'], true)) {
+                $response["message"] = "インデックス {$index} の image が許可されていないスキームです";
                 echo json_encode($response, JSON_UNESCAPED_UNICODE);
                 flock($fp_lock, LOCK_UN);
                 fclose($fp_lock);
@@ -193,24 +217,69 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         $server_play_count = $server_game && isset($server_game['playCount']) ? intval($server_game['playCount']) : 0;
         $merged_play_count = max($client_play_count, $server_play_count);
 
+        // サーバー側フィールドの読み取り（$server_game が null の場合はデフォルト値を使用）
+        $s_name = $server_game ? (isset($server_game['name']) ? (string)$server_game['name'] : '') : '';
+        $s_url = $server_game ? (isset($server_game['url']) ? (string)$server_game['url'] : '') : '';
+        $s_image = $server_game ? (isset($server_game['image']) ? (string)$server_game['image'] : '') : '';
+        $s_category = $server_game ? (isset($server_game['category']) ? (string)$server_game['category'] : '') : '';
+        $s_players_min = $server_game && isset($server_game['playersMin']) ? intval($server_game['playersMin']) : 0;
+        $s_players_max = $server_game && isset($server_game['playersMax']) ? intval($server_game['playersMax']) : 0;
+        $s_created_at = $server_game && isset($server_game['createdAt']) ? intval($server_game['createdAt']) : (time() * 1000);
+        $s_has_update = $server_game ? (isset($server_game['hasUpdate']) ? filter_var($server_game['hasUpdate'], FILTER_VALIDATE_BOOLEAN) : false) : false;
+        $s_remote_updated_at = $server_game && isset($server_game['remoteUpdatedAt']) ? intval($server_game['remoteUpdatedAt']) : 0;
+        $s_last_hash = $server_game ? (isset($server_game['lastHash']) ? (string)$server_game['lastHash'] : '') : '';
+        $s_is_pinned = $server_game ? (isset($server_game['isPinned']) ? filter_var($server_game['isPinned'], FILTER_VALIDATE_BOOLEAN) : false) : false;
+        $s_creator = $server_game ? (isset($server_game['creator']) ? (string)$server_game['creator'] : '') : '';
+
+        // クライアントが古い（$is_outdated）場合はユーザー編集可能フィールドを
+        // すべてサーバー側の値で置き換える。マージするのは lastPlayed /
+        // playCount / activeUsers のみ。
+        if ($is_outdated) {
+            $out_name = mb_substr($s_name, 0, 100, 'UTF-8');
+            $out_url = (filter_var($s_url, FILTER_VALIDATE_URL) ?: '');
+            $out_image = $s_image;
+            $out_category = mb_substr($s_category, 0, 50, 'UTF-8');
+            $out_players_min = max(0, $s_players_min);
+            $out_players_max = max(0, $s_players_max);
+            $out_created_at = $s_created_at;
+            $out_has_update = $s_has_update;
+            $out_remote_updated_at = $s_remote_updated_at;
+            $out_last_hash = $s_last_hash;
+            $out_is_pinned = $s_is_pinned;
+            $out_creator = mb_substr($s_creator, 0, 10, 'UTF-8');
+        } else {
+            $out_name = mb_substr(trim((string)($game['name'] ?? '')), 0, 100, 'UTF-8');
+            $out_url = (filter_var(trim((string)($game['url'] ?? '')), FILTER_VALIDATE_URL) ?: '');
+            $out_image = (isset($game['image']) ? trim((string)$game['image']) : '');
+            $out_category = (isset($game['category']) ? mb_substr(trim((string)$game['category']), 0, 50, 'UTF-8') : '');
+            $out_players_min = (isset($game['playersMin']) ? max(0, intval($game['playersMin'])) : 0);
+            $out_players_max = (isset($game['playersMax']) ? max(0, intval($game['playersMax'])) : 0);
+            $out_created_at = (isset($game['createdAt']) ? intval($game['createdAt']) : (time() * 1000));
+            $out_has_update = (isset($game['hasUpdate']) ? filter_var($game['hasUpdate'], FILTER_VALIDATE_BOOLEAN) : false);
+            $out_remote_updated_at = (isset($game['remoteUpdatedAt']) ? intval($game['remoteUpdatedAt']) : 0);
+            $out_last_hash = (isset($game['lastHash']) ? trim((string)$game['lastHash']) : '');
+            $out_is_pinned = (isset($game['isPinned']) ? filter_var($game['isPinned'], FILTER_VALIDATE_BOOLEAN) : false);
+            $out_creator = (isset($game['creator']) ? mb_substr(trim((string)$game['creator']), 0, 10, 'UTF-8') : '');
+        }
+
         $validated[] = [
             'id' => $game_id,
-            'name' => $is_outdated ? $server_game['name'] : mb_substr(trim((string)($game['name'] ?? '')), 0, 100, 'UTF-8'),
-            'url' => $is_outdated ? $server_game['url'] : (filter_var(trim((string)($game['url'] ?? '')), FILTER_VALIDATE_URL) ?: ''),
-            'image' => $is_outdated ? $server_game['image'] : (isset($game['image']) ? trim((string)$game['image']) : ''),
-            'category' => $is_outdated ? $server_game['category'] : (isset($game['category']) ? mb_substr(trim((string)$game['category']), 0, 50, 'UTF-8') : ''),
-            'playersMin' => $is_outdated ? $server_game['playersMin'] : (isset($game['playersMin']) ? max(0, intval($game['playersMin'])) : 0),
-            'playersMax' => $is_outdated ? $server_game['playersMax'] : (isset($game['playersMax']) ? max(0, intval($game['playersMax'])) : 0),
-            'createdAt' => $is_outdated ? $server_game['createdAt'] : (isset($game['createdAt']) ? intval($game['createdAt']) : time() * 1000),
+            'name' => $out_name,
+            'url' => $out_url,
+            'image' => $out_image,
+            'category' => $out_category,
+            'playersMin' => $out_players_min,
+            'playersMax' => $out_players_max,
+            'createdAt' => $out_created_at,
             'updatedAt' => ($client_updated_at > 0 || $server_updated_at > 0) ? max($client_updated_at, $server_updated_at) : (time() * 1000),
             'lastPlayed' => $merged_last_played,
-            'hasUpdate' => $is_outdated ? $server_game['hasUpdate'] : (isset($game['hasUpdate']) ? filter_var($game['hasUpdate'], FILTER_VALIDATE_BOOLEAN) : false),
-            'remoteUpdatedAt' => $is_outdated ? $server_game['remoteUpdatedAt'] : (isset($game['remoteUpdatedAt']) ? intval($game['remoteUpdatedAt']) : 0),
-            'lastHash' => $is_outdated ? $server_game['lastHash'] : (isset($game['lastHash']) ? trim((string)$game['lastHash']) : ''),
-            'isPinned' => $is_outdated ? $server_game['isPinned'] : (isset($game['isPinned']) ? filter_var($game['isPinned'], FILTER_VALIDATE_BOOLEAN) : false),
+            'hasUpdate' => $out_has_update,
+            'remoteUpdatedAt' => $out_remote_updated_at,
+            'lastHash' => $out_last_hash,
+            'isPinned' => $out_is_pinned,
             'playCount' => $merged_play_count,
             'activeUsers' => $merged_active,
-            'creator' => $is_outdated ? ($server_game['creator'] ?? '') : (isset($game['creator']) ? mb_substr(trim((string)$game['creator']), 0, 10, 'UTF-8') : '')
+            'creator' => $out_creator
         ];
     }
 

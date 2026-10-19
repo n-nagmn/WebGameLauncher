@@ -3148,14 +3148,19 @@
                         if (!importedGames) throw new Error("No games found");
                         
                         // ID 重複を検出し、重複する場合は Date.now() ベースで再割り当て
+                        // 既存のゲームIDとの衝突も考慮する
                         const seenIds = new Set();
                         let hasDup = false;
+                        // 現在のゲームIDをセットに追加
+                        games.forEach(g => seenIds.add(g.id));
                         importedGames.forEach(g => {
                             if (seenIds.has(g.id)) hasDup = true;
                             seenIds.add(g.id);
                         });
                         if (hasDup) {
                             const usedIds = new Set();
+                            // 既存のゲームIDを再割り当て用に予約
+                            games.forEach(g => usedIds.add(g.id));
                             const base = Date.now();
                             importedGames = importedGames.map((g, i) => {
                                 let newId = base + i;
