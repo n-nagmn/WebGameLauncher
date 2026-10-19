@@ -32,23 +32,44 @@ $rate_limit_window = 60;
 $rate_limit_max = 20;
 $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 
+// H4: read + count + append happen inside a single flock, and every call
+// prunes ALL stale keys so the file does not grow unbounded.
 function checkRateLimit($file, $ip, $window, $max) {
-    $data = [];
-    if (file_exists($file)) {
-        $raw = file_get_contents($file);
-        $data = json_decode($raw, true) ?: [];
+    $fp = @fopen($file, 'c');
+    if ($fp === false) {
+        return true;
+    }
+    if (!flock($fp, LOCK_EX)) {
+        fclose($fp);
+        return true;
+    }
+    $raw = stream_get_contents($fp);
+    $data = $raw !== false && $raw !== '' ? (json_decode($raw, true) ?: []) : [];
+    if (!is_array($data)) {
+        $data = [];
     }
     $now = time();
-    $key = md5($ip);
-    if (isset($data[$key])) {
-        $data[$key] = array_filter($data[$key], function($t) use ($now, $window) {
-            return ($now - $t) < $window;
-        });
-        if (count($data[$key]) >= $max) return false;
+    // Prune every key (all stale keys on every call)
+    foreach (array_keys($data) as $k) {
+        $data[$k] = array_values(array_filter((array)$data[$k], function($t) use ($now, $window) {
+            return is_int($t) && ($now - $t) < $window;
+        }));
+        if (empty($data[$k])) {
+            unset($data[$k]);
+        }
     }
-    $data[$key][] = $now;
-    file_put_contents($file, json_encode($data), LOCK_EX);
-    return true;
+    $key = md5($ip);
+    $allowed = isset($data[$key]) ? count($data[$key]) < $max : true;
+    if ($allowed) {
+        $data[$key][] = $now;
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, json_encode($data));
+    }
+    fflush($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
+    return $allowed;
 }
 
 if (!checkRateLimit($rate_limit_file, $client_ip, $rate_limit_window, $rate_limit_max)) {
@@ -105,7 +126,7 @@ foreach ($decoded as $key => $value) {
             break;
         case 'accentColor':
             $color = is_string($value) ? ltrim(trim($value), '#') : '';
-            $validated[$key] = preg_match('/^[0-9A-Fa-f]{6}$/', $color) ? '#' . strtolower($color) : '#00e6e6'; 
+            $validated[$key] = preg_match('/^[0-9A-Fa-f]{6}$/', $color) ? '#' . strtolower($color) : '#00e6e6';
             break;
         case 'bgImage':
             $url = is_string($value) ? trim($value) : '';
@@ -121,16 +142,24 @@ foreach ($decoded as $key => $value) {
             break;
         case 'categoryOrder':
             if (is_array($value)) {
-                // Store raw strings (no htmlspecialchars) so that clients
-                // which receive the config via JSON can escape on render.
-                // Escaping here caused double-encoding of & < > " '.
+                // M13: filter out non-scalar entries, then store raw strings
+                // (no htmlspecialchars) so that clients which receive the
+                // config via JSON can escape on render.
+                $order = array_values(array_filter(array_values($value), 'is_scalar'));
                 $validated[$key] = array_map(function($v) {
-                    return mb_substr(is_string($v) ? trim($v) : '', 0, 50, 'UTF-8');
-                }, array_values($value));
+                    return mb_substr((string)$v, 0, 50, 'UTF-8');
+                }, $order);
             }
             break;
         default:
-            $validated[$key] = is_string($value) ? htmlspecialchars(trim($value), ENT_QUOTES, 'UTF-8') : $value;
+            // M6: guard with is_string before trim so a non-scalar value
+            // never triggers a PHP 8 TypeError.
+            if (is_string($value)) {
+                $validated[$key] = htmlspecialchars(trim($value), ENT_QUOTES, 'UTF-8');
+            } elseif (is_scalar($value)) {
+                $validated[$key] = $value;
+            }
+            // non-scalar (array/object) is silently dropped
     }
 }
 
@@ -164,7 +193,7 @@ if ($json_output === false) {
 
 // Atomic write: temp file + rename so a failed write never leaves a
 // truncated/partial config.json behind.
-$tmp_path = $file_path . '.tmp';
+$tmp_path = $file_path . '.' . getmypid() . '.tmp';
 $result = @file_put_contents($tmp_path, $json_output, LOCK_EX);
 if ($result !== false) {
     if (!@rename($tmp_path, $file_path)) {

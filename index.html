@@ -2594,8 +2594,14 @@
         }
 
         // === プレイ時に順番を入れ替える（ピン留め以外） ===
-        function launchGame(game) {
+        async function launchGame(game) {
             if (!game.url) return;
+            // M18: persist counters to the server before navigating away,
+            // otherwise the in-flight fetch is aborted mid-flight and the
+            // playCount/activeUsers updates are lost.
+            try {
+                await saveGamesToServer();
+            } catch(e) {}
             window.open(game.url, localConfig.openInNewTab ? '_blank' : '_self', 'noopener,noreferrer');
             
             // 個人の既読時刻を記録
@@ -2950,6 +2956,13 @@
             const game = games.find(g => String(g.id) === String(id));
             if (game) {
                 games = games.filter(g => String(g.id) !== String(id));
+                // M26: if the deleted game's category no longer has any games,
+                // reset the active category filter so it doesn't point at an
+                // empty (non-existent) category.
+                if (game.category && currentCategory === game.category
+                        && !games.some(g => g.category === game.category)) {
+                    currentCategory = 'all';
+                }
                 renderGames();
                 renderFilters();
                 closeGameModal();
@@ -3086,10 +3099,17 @@
         function applyConfig() {
             const root = document.documentElement;
 
+            // M12: validate accentColor is a proper 6-digit hex; fall back
+            // to the default accent if it is not.
+            const accentColor = (typeof localConfig.accentColor === 'string'
+                && /^#[0-9A-Fa-f]{6}$/.test(localConfig.accentColor))
+                ? localConfig.accentColor
+                : '#00e6e6';
+
             // Apply Local Config
             root.style.setProperty('--grid-min-width', localConfig.gridSize);
-            root.style.setProperty('--focus-color', localConfig.accentColor);
-            root.style.setProperty('--focus-color-rgb', hexToRgb(localConfig.accentColor));
+            root.style.setProperty('--focus-color', accentColor);
+            root.style.setProperty('--focus-color-rgb', hexToRgb(accentColor));
             root.style.setProperty('--card-radius', localConfig.borderRadius);
             root.style.setProperty('--grid-gap', localConfig.cardGap);
             root.style.setProperty('--hover-scale', localConfig.enableAnimations ? '1.04' : '1.0');
@@ -3791,7 +3811,10 @@
         async function deleteShareMessage(idOrTs, timestamp) {
             // Remove notification immediately (match by id first, fallback to timestamp)
             const msg = shareMessages.find(m => (idOrTs && m.id === idOrTs) || m.timestamp === timestamp);
-            if (msg) {
+            // M15: default-deny — the message must exist and belong to this
+            // client before anything is sent.
+            if (!msg || !msg.clientId || msg.clientId !== myClientId) return;
+            {
                 document.querySelectorAll('.chat-notification').forEach(notif => {
                     if (notif.dataset.isShare !== 'true') return;
                     const ts = parseInt(notif.dataset.timestamp);
@@ -3921,7 +3944,10 @@
         async function deleteChatMessage(idOrTs, timestamp) {
             // Remove notification immediately (match by id first, fallback to timestamp)
             const msg = chatMessages.find(m => (idOrTs && m.id === idOrTs) || m.timestamp === timestamp);
-            if (msg) {
+            // M15: default-deny — the message must exist and belong to this
+            // client before anything is sent.
+            if (!msg || !msg.clientId || msg.clientId !== myClientId) return;
+            {
                 document.querySelectorAll('.chat-notification').forEach(notif => {
                     if (notif.dataset.isShare === 'true') return;
                     const ts = parseInt(notif.dataset.timestamp);

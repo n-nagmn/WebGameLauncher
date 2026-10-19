@@ -10,14 +10,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'upload_image') {
         echo json_encode(['status' => 'error', 'message' => 'Method Not Allowed']);
         exit;
     }
-    
+
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $uploadDir = __DIR__ . "/uploads/";
         if (!is_dir($uploadDir)) {
             @mkdir($uploadDir, 0777, true);
             @chmod($uploadDir, 0777);
         }
-        
+
         $check = getimagesize($_FILES['image']['tmp_name']);
         if($check !== false) {
             $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
@@ -39,7 +39,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'upload_image') {
         echo json_encode(['status' => 'error', 'message' => 'Invalid image or save failed']);
         exit;
     }
-    
+
     echo json_encode(['status' => 'error', 'message' => 'No file uploaded']);
     exit;
 }
@@ -73,8 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $encoded = json_encode(array_values($stamps), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 
+        // M16: 'c' mode so opening the lock file never truncates it
         $lock_file = $stamps_file . '.lock';
-        $lock_fp = @fopen($lock_file, 'w');
+        $lock_fp = @fopen($lock_file, 'c');
         if ($lock_fp !== false && flock($lock_fp, LOCK_EX)) {
             @file_put_contents($stamps_file, $encoded);
             @chmod($stamps_file, 0666);

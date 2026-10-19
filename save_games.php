@@ -33,23 +33,44 @@ $rate_limit_window = 60;
 $rate_limit_max = 30;
 $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 
+// H4: read + count + append happen inside a single flock, and every call
+// prunes ALL stale keys so the file does not grow unbounded.
 function checkRateLimit($file, $ip, $window, $max) {
-    $data = [];
-    if (file_exists($file)) {
-        $raw = file_get_contents($file);
-        $data = json_decode($raw, true) ?: [];
+    $fp = @fopen($file, 'c');
+    if ($fp === false) {
+        return true;
+    }
+    if (!flock($fp, LOCK_EX)) {
+        fclose($fp);
+        return true;
+    }
+    $raw = stream_get_contents($fp);
+    $data = $raw !== false && $raw !== '' ? (json_decode($raw, true) ?: []) : [];
+    if (!is_array($data)) {
+        $data = [];
     }
     $now = time();
-    $key = md5($ip);
-    if (isset($data[$key])) {
-        $data[$key] = array_filter($data[$key], function($t) use ($now, $window) {
-            return ($now - $t) < $window;
-        });
-        if (count($data[$key]) >= $max) return false;
+    // Prune every key (all stale keys on every call)
+    foreach (array_keys($data) as $k) {
+        $data[$k] = array_values(array_filter((array)$data[$k], function($t) use ($now, $window) {
+            return is_int($t) && ($now - $t) < $window;
+        }));
+        if (empty($data[$k])) {
+            unset($data[$k]);
+        }
     }
-    $data[$key][] = $now;
-    file_put_contents($file, json_encode($data), LOCK_EX);
-    return true;
+    $key = md5($ip);
+    $allowed = isset($data[$key]) ? count($data[$key]) < $max : true;
+    if ($allowed) {
+        $data[$key][] = $now;
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, json_encode($data));
+    }
+    fflush($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
+    return $allowed;
 }
 
 if (!checkRateLimit($rate_limit_file, $client_ip, $rate_limit_window, $rate_limit_max)) {
@@ -92,8 +113,9 @@ if (count($decoded) > $max_games) {
     exit;
 }
 
+// M16: use 'c' mode so opening the lock file does not truncate it
 $lock_file = __DIR__ . '/games.lock';
-$fp_lock = fopen($lock_file, 'w');
+$fp_lock = fopen($lock_file, 'c');
 
 if ($fp_lock && flock($fp_lock, LOCK_EX)) {
     // --- Start of Active User Merge Logic ---
@@ -195,7 +217,7 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         // タイムスタンプの比較（ミリ秒）
         $client_updated_at = isset($game['updatedAt']) ? intval($game['updatedAt']) : 0;
         $server_updated_at = $server_game && isset($server_game['updatedAt']) ? intval($server_game['updatedAt']) : 0;
-        
+
         // クライアントが古い場合はサーバーのメタデータを優先する。
         // ただし client_updated_at が 0（未送信）の新しいゲームは
         // 古いデータとみなさず、クライアントの値を使う。
@@ -204,7 +226,7 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         // アクティブユーザーのマージ処理
         $new_active = isset($game['activeUsers']) && is_array($game['activeUsers']) ? $game['activeUsers'] : [];
         $merged_active = $new_active;
-        
+
         if ($server_game && isset($server_game['activeUsers']) && is_array($server_game['activeUsers'])) {
             foreach ($server_game['activeUsers'] as $uid => $ts) {
                 if (!isset($merged_active[$uid]) || $ts > $merged_active[$uid]) {
@@ -212,7 +234,7 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
                 }
             }
         }
-        
+
         // ついでにサーバー側でも1時間以上前の古いデータを掃除
         $merged_active = array_filter($merged_active, function($ts) use ($one_hour_ago_ms) {
             return $ts > $one_hour_ago_ms;
@@ -223,41 +245,42 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         $server_last_played = $server_game && isset($server_game['lastPlayed']) ? intval($server_game['lastPlayed']) : 0;
         $merged_last_played = max($client_last_played, $server_last_played);
 
-        // playCountの採用（新しい方を採用するか、足し合わせるか？基本的にサーバー側の数値をベースにするのが安全だが、今回は新しい方を採用）
+        // playCountの採用（新しい方を採用）
         $client_play_count = isset($game['playCount']) ? intval($game['playCount']) : 0;
         $server_play_count = $server_game && isset($server_game['playCount']) ? intval($server_game['playCount']) : 0;
         $merged_play_count = max($client_play_count, $server_play_count);
 
-        // サーバー側フィールドの読み取り（$server_game が null の場合はデフォルト値を使用）
-        $s_name = $server_game ? (isset($server_game['name']) ? (string)$server_game['name'] : '') : '';
-        $s_url = $server_game ? (isset($server_game['url']) ? (string)$server_game['url'] : '') : '';
-        $s_image = $server_game ? (isset($server_game['image']) ? (string)$server_game['image'] : '') : '';
-        $s_category = $server_game ? (isset($server_game['category']) ? (string)$server_game['category'] : '') : '';
-        $s_players_min = $server_game && isset($server_game['playersMin']) ? intval($server_game['playersMin']) : 0;
-        $s_players_max = $server_game && isset($server_game['playersMax']) ? intval($server_game['playersMax']) : 0;
-        $s_created_at = $server_game && isset($server_game['createdAt']) ? intval($server_game['createdAt']) : (time() * 1000);
-        $s_has_update = $server_game ? (isset($server_game['hasUpdate']) ? filter_var($server_game['hasUpdate'], FILTER_VALIDATE_BOOLEAN) : false) : false;
-        $s_remote_updated_at = $server_game && isset($server_game['remoteUpdatedAt']) ? intval($server_game['remoteUpdatedAt']) : 0;
-        $s_last_hash = $server_game ? (isset($server_game['lastHash']) ? (string)$server_game['lastHash'] : '') : '';
-        $s_is_pinned = $server_game ? (isset($server_game['isPinned']) ? filter_var($server_game['isPinned'], FILTER_VALIDATE_BOOLEAN) : false) : false;
-        $s_creator = $server_game ? (isset($server_game['creator']) ? (string)$server_game['creator'] : '') : '';
+        // M7: read every server-side field with ?? defaults so a missing
+        // key never throws a PHP warning/notice on this path.
+        $s_name = $server_game['name'] ?? '';
+        $s_url = $server_game['url'] ?? '';
+        $s_image = $server_game['image'] ?? '';
+        $s_category = $server_game['category'] ?? '';
+        $s_players_min = $server_game['playersMin'] ?? 0;
+        $s_players_max = $server_game['playersMax'] ?? 0;
+        $s_created_at = $server_game['createdAt'] ?? (time() * 1000);
+        $s_has_update = $server_game['hasUpdate'] ?? false;
+        $s_remote_updated_at = $server_game['remoteUpdatedAt'] ?? 0;
+        $s_last_hash = $server_game['lastHash'] ?? '';
+        $s_is_pinned = $server_game['isPinned'] ?? false;
+        $s_creator = $server_game['creator'] ?? '';
 
         // クライアントが古い（$is_outdated）場合はユーザー編集可能フィールドを
         // すべてサーバー側の値で置き換える。マージするのは lastPlayed /
         // playCount / activeUsers のみ。
         if ($is_outdated) {
-            $out_name = mb_substr($s_name, 0, 100, 'UTF-8');
-            $out_url = (filter_var($s_url, FILTER_VALIDATE_URL) ?: '');
-            $out_image = $s_image;
-            $out_category = mb_substr($s_category, 0, 50, 'UTF-8');
-            $out_players_min = max(0, $s_players_min);
-            $out_players_max = max(0, $s_players_max);
-            $out_created_at = $s_created_at;
-            $out_has_update = $s_has_update;
-            $out_remote_updated_at = $s_remote_updated_at;
-            $out_last_hash = $s_last_hash;
-            $out_is_pinned = $s_is_pinned;
-            $out_creator = mb_substr($s_creator, 0, 10, 'UTF-8');
+            $out_name = mb_substr((string)$s_name, 0, 100, 'UTF-8');
+            $out_url = (filter_var((string)$s_url, FILTER_VALIDATE_URL) ?: '');
+            $out_image = (string)$s_image;
+            $out_category = mb_substr((string)$s_category, 0, 50, 'UTF-8');
+            $out_players_min = max(0, intval($s_players_min));
+            $out_players_max = max(0, intval($s_players_max));
+            $out_created_at = intval($s_created_at);
+            $out_has_update = filter_var($s_has_update, FILTER_VALIDATE_BOOLEAN);
+            $out_remote_updated_at = intval($s_remote_updated_at);
+            $out_last_hash = (string)$s_last_hash;
+            $out_is_pinned = filter_var($s_is_pinned, FILTER_VALIDATE_BOOLEAN);
+            $out_creator = mb_substr((string)$s_creator, 0, 10, 'UTF-8');
         } else {
             $out_name = mb_substr(trim((string)($game['name'] ?? '')), 0, 100, 'UTF-8');
             $out_url = (filter_var(trim((string)($game['url'] ?? '')), FILTER_VALIDATE_URL) ?: '');
@@ -308,7 +331,7 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
     }
 
     // Atomic write: temp file + rename
-    $tmp_path = $file_path . '.tmp';
+    $tmp_path = $file_path . '.' . getmypid() . '.tmp';
     $result = @file_put_contents($tmp_path, $json_output, LOCK_EX);
     if ($result !== false) {
         if (!@rename($tmp_path, $file_path)) {
@@ -318,17 +341,17 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
     }
     if ($result !== false) {
         @chmod($file_path, 0666);
-        
+
         $response["status"] = "success";
         $response["message"] = "保存成功！";
         $response["count"] = count($validated);
-        $response["backup"] = $backup_success ? ($backup_name ? basename($backup_name) : 'created') : 'skipped';    
+        $response["backup"] = $backup_success ? ($backup_name ? basename($backup_name) : 'created') : 'skipped';
         http_response_code(200);
     } else {
         $response["message"] = "games.json への書き込みに失敗しました。パーミッションを確認してください（chmod 666 games.json）";
         http_response_code(500);
     }
-    
+
     flock($fp_lock, LOCK_UN);
 } else {
     $response["message"] = "サーバーが混雑しています。もう一度お試しください。";
@@ -340,4 +363,3 @@ if ($fp_lock) {
 }
 
 echo json_encode($response, JSON_UNESCAPED_UNICODE);
-
