@@ -135,6 +135,15 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
             }
         }
 
+        // Reject non-numeric ids: string ids must fully match /^\d+$/ before
+        // being cast to int (prevents e.g. "abc12" being silently coerced).
+        if (is_string($game['id']) && !preg_match('/^\d+$/', $game['id'])) {
+            $response["message"] = "インデックス {$index} の id が不正です（数字のみ許可）";
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            flock($fp_lock, LOCK_UN);
+            fclose($fp_lock);
+            exit;
+        }
         $game_id = is_int($game['id']) ? $game['id'] : intval($game['id']);
 
         // Duplicate id detection: reject the entire payload if an id appears twice
@@ -175,9 +184,9 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         }
 
         // 既存のサーバー側データを取得
-        $server_game = isset($existing_active_map[$game_id]) ? null : null; // マップからはactiveUsersしか取れないので再検索
+        $server_game = null;
         foreach ($existing_games as $ex_g) {
-            if ($ex_g['id'] == $game_id) {
+            if (isset($ex_g['id']) && $ex_g['id'] === $game_id) {
                 $server_game = $ex_g;
                 break;
             }
@@ -187,8 +196,10 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         $client_updated_at = isset($game['updatedAt']) ? intval($game['updatedAt']) : 0;
         $server_updated_at = $server_game && isset($server_game['updatedAt']) ? intval($server_game['updatedAt']) : 0;
         
-        // クライアントが古い場合はサーバーのメタデータを優先する
-        $is_outdated = ($server_game && $client_updated_at < $server_updated_at);
+        // クライアントが古い場合はサーバーのメタデータを優先する。
+        // ただし client_updated_at が 0（未送信）の新しいゲームは
+        // 古いデータとみなさず、クライアントの値を使う。
+        $is_outdated = ($server_game && $client_updated_at > 0 && $client_updated_at < $server_updated_at);
 
         // アクティブユーザーのマージ処理
         $new_active = isset($game['activeUsers']) && is_array($game['activeUsers']) ? $game['activeUsers'] : [];

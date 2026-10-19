@@ -20,8 +20,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'upload_image') {
         
         $check = getimagesize($_FILES['image']['tmp_name']);
         if($check !== false) {
-            $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            if (!$ext) $ext = 'png';
+            $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+            // Extension whitelist: only image types that are actually rendered
+            // as <img> stamps are allowed (prevents .php/.phtml etc. uploads).
+            if (!preg_match('/^(png|jpe?g|webp|gif)$/', $ext)) {
+                echo json_encode(['status' => 'error', 'message' => 'Invalid file extension']);
+                exit;
+            }
             $filename = uniqid('stamp_') . '.' . $ext;
             $targetPath = $uploadDir . $filename;
             if (@move_uploaded_file($_FILES['image']['tmp_name'], $targetPath)) {
@@ -69,15 +74,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $encoded = json_encode(array_values($stamps), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 
         $lock_file = $stamps_file . '.lock';
-        $lock_fp = fopen($lock_file, 'w');
-        if (flock($lock_fp, LOCK_EX)) {
+        $lock_fp = @fopen($lock_file, 'w');
+        if ($lock_fp !== false && flock($lock_fp, LOCK_EX)) {
             @file_put_contents($stamps_file, $encoded);
             @chmod($stamps_file, 0666);
             flock($lock_fp, LOCK_UN);
+            fclose($lock_fp);
+            echo json_encode(['status' => 'success']);
+        } else {
+            if ($lock_fp !== false) {
+                fclose($lock_fp);
+            }
+            http_response_code(503);
+            echo json_encode(['status' => 'error', 'message' => 'サーバーが混雑しています。もう一度お試しください。']);
         }
-        fclose($lock_fp);
-
-        echo json_encode(['status' => 'success']);
     } else {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Invalid JSON']);

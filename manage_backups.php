@@ -15,8 +15,8 @@ header('Content-Type: application/json; charset=utf-8');
 
 $backup_dir = __DIR__ . '/backups';
 if (!is_dir($backup_dir)) {
-    @mkdir($backup_dir, 0777, true);
-    @chmod($backup_dir, 0777);
+    @mkdir($backup_dir, 0755, true);
+    @chmod($backup_dir, 0755);
 }
 
 // Strict pattern for server-side backup filenames (created via the create action)
@@ -141,8 +141,8 @@ function extractBackupZip($zip_path, $dest, $root_json_files, $lock_file = null)
     foreach ($members as $m) {
         $dir = dirname($m['target']);
         if (!is_dir($dir)) {
-            @mkdir($dir, 0777, true);
-            @chmod($dir, 0777);
+            @mkdir($dir, 0755, true);
+            @chmod($dir, 0755);
         }
         $src = $zip->getFromName($m['name']);
         if ($src === false) {

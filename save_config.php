@@ -104,26 +104,29 @@ foreach ($decoded as $key => $value) {
             $validated[$key] = filter_var($value, FILTER_VALIDATE_BOOLEAN);
             break;
         case 'accentColor':
-            $color = ltrim(trim($value), '#');
+            $color = is_string($value) ? ltrim(trim($value), '#') : '';
             $validated[$key] = preg_match('/^[0-9A-Fa-f]{6}$/', $color) ? '#' . strtolower($color) : '#00e6e6'; 
             break;
         case 'bgImage':
-            $url = trim($value);
+            $url = is_string($value) ? trim($value) : '';
             $validated[$key] = (empty($url) || filter_var($url, FILTER_VALIDATE_URL)) ? $url : '';
             break;
         case 'gridSize':
         case 'borderRadius':
         case 'cardGap':
-            $validated[$key] = preg_replace('/[^0-9px]/', '', trim($value)) ?: '240px';
+            $validated[$key] = preg_replace('/[^0-9px]/', '', is_string($value) ? trim($value) : '') ?: '240px';
             break;
         case 'clockFormat':
             $validated[$key] = in_array($value, ['12h', '24h'], true) ? $value : '24h';
             break;
         case 'categoryOrder':
             if (is_array($value)) {
+                // Store raw strings (no htmlspecialchars) so that clients
+                // which receive the config via JSON can escape on render.
+                // Escaping here caused double-encoding of & < > " '.
                 $validated[$key] = array_map(function($v) {
-                    return htmlspecialchars(mb_substr(trim($v), 0, 50), ENT_QUOTES, 'UTF-8');
-                }, $value);
+                    return mb_substr(is_string($v) ? trim($v) : '', 0, 50, 'UTF-8');
+                }, array_values($value));
             }
             break;
         default:
@@ -159,7 +162,16 @@ if ($json_output === false) {
     exit;
 }
 
-$result = @file_put_contents($file_path, $json_output, LOCK_EX);
+// Atomic write: temp file + rename so a failed write never leaves a
+// truncated/partial config.json behind.
+$tmp_path = $file_path . '.tmp';
+$result = @file_put_contents($tmp_path, $json_output, LOCK_EX);
+if ($result !== false) {
+    if (!@rename($tmp_path, $file_path)) {
+        @unlink($tmp_path);
+        $result = false;
+    }
+}
 if ($result !== false) {
     @chmod($file_path, 0666);
     $response["status"] = "success";
