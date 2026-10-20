@@ -178,12 +178,14 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
         }
         $seen_ids[$game_id] = true;
 
-        // URL sanity check: reject non-URL schemes such as javascript:/data:/vbscript:/file:
+        // URL sanity check: reject non-URL schemes such as javascript:/vbscript:/file:
         // (FILTER_VALIDATE_URL allows "javascript:alert(1)" which has no "://")
+        // NOTE: data: URIs are ALLOWED for image (used for placeholders like
+        // data:image/png or data:image/svg+xml), so only non-image schemes are rejected here.
         $raw_url = is_string($game['url']) ? trim($game['url']) : '';
         if (preg_match('/^[a-z][a-z0-9+.-]*:/i', $raw_url)) {
             $scheme = strtolower((string)preg_replace('/^([a-z][a-z0-9+.-]*):.*$/i', '$1', $raw_url));
-            if (in_array($scheme, ['javascript', 'data', 'vbscript', 'file'], true)) {
+            if (in_array($scheme, ['javascript', 'vbscript', 'file'], true)) {
                 $response["message"] = "インデックス {$index} の url が許可されていないスキームです";
                 echo json_encode($response, JSON_UNESCAPED_UNICODE);
                 flock($fp_lock, LOCK_UN);
@@ -192,11 +194,21 @@ if ($fp_lock && flock($fp_lock, LOCK_EX)) {
             }
         }
 
-        // Image sanity check: same scheme rejection as url (javascript:/data:/vbscript:/file:)
+        // Image sanity check: reject only XSS-dangerous schemes (javascript:/vbscript:/file:).
+        // data: is allowed but ONLY for image MIME types (data:image/png, data:image/svg+xml, etc.).
+        // This keeps placeholder images working while blocking data:text/html or data:javascript.
         $raw_image = isset($game['image']) ? trim((string)$game['image']) : '';
         if ($raw_image !== '' && preg_match('/^[a-z][a-z0-9+.-]*:/i', $raw_image)) {
             $img_scheme = strtolower((string)preg_replace('/^([a-z][a-z0-9+.-]*):.*$/i', '$1', $raw_image));
-            if (in_array($img_scheme, ['javascript', 'data', 'vbscript', 'file'], true)) {
+            if (in_array($img_scheme, ['javascript', 'vbscript', 'file'], true)) {
+                $response["message"] = "インデックス {$index} の image が許可されていないスキームです";
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                flock($fp_lock, LOCK_UN);
+                fclose($fp_lock);
+                exit;
+            }
+            // Allow data: only for image MIME types
+            if ($img_scheme === 'data' && !preg_match('/^data:image\//i', $raw_image)) {
                 $response["message"] = "インデックス {$index} の image が許可されていないスキームです";
                 echo json_encode($response, JSON_UNESCAPED_UNICODE);
                 flock($fp_lock, LOCK_UN);
